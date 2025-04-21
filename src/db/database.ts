@@ -1,7 +1,7 @@
 
 import Dexie, { type Table } from 'dexie';
 import { Place, Review, User } from '../types';
-import { samplePlaces } from './sampleData';
+import { samplePlaces, sampleReviews } from './sampleData';
 
 // Create a Dexie database for client-side storage
 class LocaleSpotDatabase extends Dexie {
@@ -20,10 +20,16 @@ class LocaleSpotDatabase extends Dexie {
 
   async initializeSampleData() {
     const placesCount = await this.places.count();
+    const reviewsCount = await this.reviews.count();
     
     if (placesCount === 0) {
-      // Only seed if database is empty
+      // Only seed places if database is empty
       await this.places.bulkAdd(samplePlaces);
+    }
+    
+    if (reviewsCount === 0) {
+      // Only seed reviews if database is empty
+      await this.reviews.bulkAdd(sampleReviews);
     }
   }
 }

@@ -6,6 +6,7 @@ import { PlaceDetail } from "@/components/places/PlaceDetail";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db/database";
 import { ArrowLeft } from "lucide-react";
+import { sampleReviews } from "@/db/sampleData";
 
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,14 +36,25 @@ export default function PlaceDetailPage() {
         
         setPlace(placeData);
         
-        // Load reviews for this place
+        // Try to load reviews from database first
         const placeReviews = await db.reviews
           .where("placeId")
           .equals(id)
           .reverse()
           .sortBy("date");
         
-        setReviews(placeReviews);
+        // If no reviews in database for this place, use sample reviews
+        if (placeReviews.length === 0) {
+          const filteredSampleReviews = sampleReviews.filter(review => review.placeId === id);
+          setReviews(filteredSampleReviews);
+          
+          // Also add sample reviews to database for future use
+          if (filteredSampleReviews.length > 0) {
+            await db.reviews.bulkAdd(filteredSampleReviews);
+          }
+        } else {
+          setReviews(placeReviews);
+        }
       } catch (error) {
         console.error("Failed to load place details:", error);
         setError("Failed to load place details");
