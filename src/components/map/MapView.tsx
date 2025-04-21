@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
@@ -9,7 +8,8 @@ import { MapLoading } from './MapLoading';
 import { MapError } from './MapError';
 import { createMapMarker } from './MapMarker';
 import { createMapPopup } from './MapPopup';
-import { toast } from 'sonner';
+import { HighlightedPlace } from './HighlightedPlace';
+import { MapPin } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MapViewProps {
@@ -19,13 +19,14 @@ interface MapViewProps {
 
 export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [popupInfo, setPopupInfo] = useState<Place | null>(null);
+  const [highlightedPlace, setHighlightedPlace] = useState<Place | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
   const { mapboxToken, isLoadingToken, error: mapboxError } = useMapbox();
   const { geocodedPlaces } = useGeocoding(places);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  
+
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
       return geocodedPlaces;
@@ -35,7 +36,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       selectedFeatures.some(feature => place.features.includes(feature))
     );
   }, [geocodedPlaces, selectedFeatures]);
-  
+
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map) return;
     
@@ -43,7 +44,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
-      // Ensure the map container has proper dimensions
       if (mapContainer.current) {
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
@@ -100,7 +100,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [map, mapInitialized, filteredPlaces]);
   
-  // Add markers to the map
   useEffect(() => {
     if (!map || !mapInitialized) {
       console.log('Cannot add markers: map not ready', {
@@ -113,11 +112,9 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     console.log('Adding markers for', filteredPlaces.length, 'places');
     console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
-    // Clear existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
     
-    // Add new markers
     filteredPlaces.forEach(place => {
       if (place.coordinates) {
         const marker = createMapMarker({
@@ -161,9 +158,10 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
 
   return (
     <div className="h-full w-full bg-gray-100 relative" style={{ minHeight: '500px' }}>
-      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-20 right-4 z-10 flex flex-col gap-2">
         <Button 
-          size="sm" 
+          size="sm"
+          className="bg-white text-gray-700 hover:bg-gray-100 shadow-md"
           onClick={() => navigator.geolocation.getCurrentPosition(
             position => {
               if (map) {
@@ -178,10 +176,16 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
             }
           )}
         >
+          <MapPin className="h-4 w-4 mr-1" />
           My Location
         </Button>
       </div>
       <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '500px' }} />
+      {highlightedPlace && (
+        <div className="absolute bottom-20 left-4 z-10">
+          <HighlightedPlace place={highlightedPlace} />
+        </div>
+      )}
       <div className="absolute bottom-4 left-4 z-10">
         <div className="bg-white p-2 rounded shadow text-xs">
           {filteredPlaces.filter(p => p.coordinates).length} locations on map

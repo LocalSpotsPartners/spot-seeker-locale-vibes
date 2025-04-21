@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { MapView } from "@/components/map/MapView";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
@@ -58,11 +57,21 @@ export default function MapPage() {
     loadPlaces();
   }, []);
 
+  const filteredPlaces = useMemo(() => {
+    if (selectedFeatures.length === 0) return places;
+    return places.filter(place => 
+      selectedFeatures.every(feature => place.features.includes(feature))
+    );
+  }, [places, selectedFeatures]);
+
   return (
     <Layout>
       <div className="relative h-[calc(100vh-4rem)] w-full">
         <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm shadow-md p-4">
-          <FeatureFilter onFilterChange={setSelectedFeatures} />
+          <FeatureFilter 
+            onFilterChange={setSelectedFeatures} 
+            selectedFeatures={selectedFeatures}
+          />
         </div>
         
         {isLoading ? (
@@ -72,7 +81,7 @@ export default function MapPage() {
           </div>
         ) : (
           <div className="pt-20 h-[calc(100%-5rem)]" style={{ minHeight: '500px' }}>
-            <MapView places={places} selectedFeatures={selectedFeatures} />
+            <MapView places={filteredPlaces} selectedFeatures={selectedFeatures} />
           </div>
         )}
       </div>

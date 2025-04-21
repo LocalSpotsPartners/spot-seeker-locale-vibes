@@ -1,7 +1,6 @@
 
 import { Place } from '@/types';
 import mapboxgl from 'mapbox-gl';
-import { MapPin } from 'lucide-react';
 
 interface MapMarkerProps {
   place: Place & { coordinates: [number, number] };
@@ -20,23 +19,21 @@ export function createMapMarker({ place, map, onMarkerClick }: MapMarkerProps) {
   }
   
   try {
-    // Create a DOM element for the marker
     const el = document.createElement('div');
     el.className = 'custom-marker';
-    el.innerHTML = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ff4957" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3" fill="#ff4957"></circle></svg>`;
+    el.innerHTML = `
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#EA4335" stroke="none">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+      </svg>
+    `;
     el.style.cursor = 'pointer';
     el.style.width = '32px';
     el.style.height = '32px';
     
-    // Add event listener to the marker
     el.addEventListener('click', () => {
-      console.log('Marker clicked:', place.name);
       onMarkerClick(place);
     });
     
-    console.log(`Creating marker for ${place.name} at:`, place.coordinates);
-    
-    // Create and return the marker
     return new mapboxgl.Marker({
       element: el,
       anchor: 'bottom'

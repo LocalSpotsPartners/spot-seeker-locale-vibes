@@ -1,15 +1,14 @@
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { PlaceFeature } from "@/types";
 import { Badge } from "@/components/ui/badge";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Filter } from "lucide-react";
 
 interface FeatureFilterProps {
   onFilterChange: (features: PlaceFeature[]) => void;
+  selectedFeatures: PlaceFeature[];
 }
 
-// All available features to filter by
 const availableFeatures: PlaceFeature[] = [
   "rooftop",
   "outdoor",
@@ -21,19 +20,19 @@ const availableFeatures: PlaceFeature[] = [
   "view"
 ];
 
-export function FeatureFilter({ onFilterChange }: FeatureFilterProps) {
-  // Initialize state with an empty array
-  const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
-
-  // Emits selected features to parent component
-  useEffect(() => {
-    onFilterChange(selectedFeatures);
-  }, [selectedFeatures, onFilterChange]);
-
-  // Feature toggling handler
-  const handleValueChange = (values: string[]) => {
-    setSelectedFeatures(values as PlaceFeature[]);
+export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilterProps) {
+  const handleFeatureToggle = (feature: PlaceFeature) => {
+    if (selectedFeatures.includes(feature)) {
+      onFilterChange(selectedFeatures.filter(f => f !== feature));
+    } else {
+      onFilterChange([...selectedFeatures, feature]);
+    }
   };
+
+  const selectedText = useMemo(() => {
+    if (selectedFeatures.length === 0) return '';
+    return `Selected: ${selectedFeatures.join(', ')}`;
+  }, [selectedFeatures]);
 
   return (
     <div className="mb-6">
@@ -42,6 +41,10 @@ export function FeatureFilter({ onFilterChange }: FeatureFilterProps) {
         <h3 className="font-medium">Filter by features</h3>
       </div>
       
+      {selectedText && (
+        <p className="text-sm text-gray-600 mb-2">{selectedText}</p>
+      )}
+      
       <div className="flex flex-wrap gap-2 justify-start">
         {availableFeatures.map(feature => (
           <Badge 
@@ -49,16 +52,10 @@ export function FeatureFilter({ onFilterChange }: FeatureFilterProps) {
             variant="outline"
             className={`cursor-pointer ${
               selectedFeatures.includes(feature) 
-                ? "bg-locale-100 text-locale-800" 
+                ? "bg-locale-100 text-locale-800 border-locale-800" 
                 : ""
             }`}
-            onClick={() => {
-              setSelectedFeatures(prev => 
-                prev.includes(feature)
-                  ? prev.filter(item => item !== feature)
-                  : [...prev, feature]
-              );
-            }}
+            onClick={() => handleFeatureToggle(feature)}
           >
             {feature.charAt(0).toUpperCase() + feature.slice(1)}
           </Badge>
