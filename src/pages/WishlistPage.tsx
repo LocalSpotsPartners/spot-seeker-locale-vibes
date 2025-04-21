@@ -10,7 +10,24 @@ export default function WishlistPage() {
   useEffect(() => {
     const stored = localStorage.getItem("wishList");
     if (stored) {
-      setWishList(JSON.parse(stored));
+      const parsedList = JSON.parse(stored);
+      
+      // Remove duplicates by using a Set with place IDs
+      const uniqueIds = new Set<string>();
+      const uniqueList = parsedList.filter((place: Place) => {
+        if (uniqueIds.has(place.id)) {
+          return false;
+        }
+        uniqueIds.add(place.id);
+        return true;
+      });
+      
+      // If we removed duplicates, update localStorage
+      if (uniqueList.length !== parsedList.length) {
+        localStorage.setItem("wishList", JSON.stringify(uniqueList));
+      }
+      
+      setWishList(uniqueList);
     }
   }, []);
 

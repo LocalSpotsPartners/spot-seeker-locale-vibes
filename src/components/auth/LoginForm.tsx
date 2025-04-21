@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Chrome } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
 
 export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
   const { login, socialLogin } = useAuth();
@@ -32,8 +33,13 @@ export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
   const handleGoogleLogin = async () => {
     setError(null);
     try {
+      // Show a toast to guide the user
+      toast.info("Redirecting to Google for authentication...");
+      
+      // Make sure we're using the right provider and handling any errors
       await socialLogin('google');
     } catch (error) {
+      console.error("Google login error:", error);
       setError(error instanceof Error ? error.message : "Failed to login with Google");
     }
   };

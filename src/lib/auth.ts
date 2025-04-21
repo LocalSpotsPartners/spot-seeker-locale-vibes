@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
+import { toast } from "sonner";
 
 // Local storage keys
 const USER_STORAGE_KEY = "locale-spots-user";
@@ -61,18 +62,36 @@ export const signup = async (name: string, email: string, password: string): Pro
 };
 
 // Social login function
-export const socialLogin = async (provider: 'google' | 'apple'): Promise<User> => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: provider,
-  });
+export const socialLogin = async (provider: 'google' | 'apple'): Promise<void> => {
+  try {
+    console.log(`Attempting to login with ${provider}...`);
+    
+    // Use correct redirect URL based on the current environment
+    const redirectTo = window.location.origin + '/auth';
+    
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: provider,
+      options: {
+        redirectTo: redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      console.error(`${provider} login error:`, error);
+      throw new Error(error.message);
+    }
+
+    console.log(`${provider} login initiated:`, data);
+    // The redirect will happen automatically
+  } catch (err) {
+    console.error(`Error during ${provider} login:`, err);
+    toast.error(`Failed to login with ${provider}`);
+    throw err;
   }
-
-  // Note: The actual user data will be handled by the auth state change listener
-  // This is because OAuth redirects the user and we get the data on return
-  return {} as User;
 };
 
 // Logout function

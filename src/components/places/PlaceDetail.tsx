@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from "react";
 import { Place, Review } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,7 +9,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +17,7 @@ import { ReviewForm } from "../reviews/ReviewForm";
 import { MapPin, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
+import { toast } from "sonner";
 
 interface PlaceDetailProps {
   place: Place;
@@ -31,13 +31,16 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
   const [showForm, setShowForm] = useState(false);
   
   const handleAddReview = useCallback(async (review: Omit<Review, "id" | "userId" | "userName" | "userAvatar" | "date">) => {
-    if (!user) return;
+    if (!user) {
+      toast.error("You must be logged in to submit a review");
+      return;
+    }
     
     const newReview = {
       place_id: place.id,
       user_id: user.id,
       user_name: user.name,
-      user_avatar: user.avatar,
+      user_avatar: user.avatar || '',
       rating: review.rating,
       comment: review.comment
     };
@@ -51,22 +54,26 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
       if (error) throw error;
       
       if (data && data.length > 0) {
+        // Transform the response into a Review object
         const addedReview: Review = {
           id: data[0].id,
           placeId: data[0].place_id || '',
           userId: data[0].user_id || '',
           userName: data[0].user_name,
-          userAvatar: data[0].user_avatar,
+          userAvatar: data[0].user_avatar || '',
           rating: data[0].rating || 0,
           comment: data[0].comment || '',
           date: data[0].created_at || new Date().toISOString()
         };
         
+        // Add the new review to the beginning of localReviews
         setLocalReviews(prev => [addedReview, ...prev]);
         setShowForm(false);
+        toast.success("Review submitted successfully");
       }
     } catch (error) {
       console.error("Failed to add review:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to add review");
     }
   }, [user, place.id]);
   
@@ -139,7 +146,7 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
             
             <TabsContent value="reviews" className="pt-4">
               <div className="space-y-4">
-                {isAuthenticated && (
+                {isAuthenticated ? (
                   <div>
                     {!showForm ? (
                       <Button 
@@ -156,6 +163,10 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
                       />
                     )}
                   </div>
+                ) : (
+                  <p className="text-center text-gray-500">
+                    Please log in to write a review
+                  </p>
                 )}
                 
                 <ReviewList reviews={localReviews} />
