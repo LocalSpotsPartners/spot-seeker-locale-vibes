@@ -14,16 +14,22 @@ export default function AuthPage() {
   useEffect(() => {
     // Check if this is a redirect from OAuth
     const handleOAuthCallback = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      
-      // If we have a session from the OAuth redirect, show success message
-      if (data.session && window.location.hash) {
-        toast.success("Successfully logged in!");
-        // Ensure navigation happens after toast is shown
-        setTimeout(() => navigate("/"), 500);
-      } else if (error) {
-        console.error("OAuth callback error:", error);
-        toast.error(`Authentication error: ${error.message}`);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        
+        // If we have a session from the OAuth redirect, show success message
+        if (data.session && window.location.hash) {
+          console.log("OAuth callback successful, navigating to home");
+          toast.success("Successfully logged in!");
+          // Force navigation to home page immediately
+          navigate("/", { replace: true });
+        } else if (error) {
+          console.error("OAuth callback error:", error);
+          toast.error(`Authentication error: ${error.message}`);
+        }
+      } catch (err) {
+        console.error("Unexpected error during OAuth callback:", err);
+        toast.error("An unexpected error occurred during login");
       }
     };
     
@@ -34,7 +40,7 @@ export default function AuthPage() {
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       console.log("User is authenticated, redirecting to home");
-      navigate("/");
+      navigate("/", { replace: true });
     } else {
       console.log("Auth status:", { isAuthenticated, isLoading });
     }
