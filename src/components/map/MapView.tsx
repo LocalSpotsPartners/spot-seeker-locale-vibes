@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
@@ -10,7 +9,6 @@ import { Star } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { supabase } from '@/integrations/supabase/client';
 
-// Define the MapViewProps interface
 interface MapViewProps {
   places: Place[];
   selectedFeatures: PlaceFeature[];
@@ -26,40 +24,73 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const [geocodedPlaces, setGeocodedPlaces] = useState<(Place & { coordinates?: [number, number] })[]>([]);
   const mapContainer = useRef<HTMLDivElement>(null);
   
-  // Fetch Mapbox token from Supabase edge function
+  // Fetch Mapbox token and geocode addresses
   useEffect(() => {
-    const fetchMapboxToken = async () => {
+    const geocodePlaces = async () => {
       try {
         setIsLoadingToken(true);
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        if (error) {
-          console.error('Error fetching Mapbox token:', error);
-          setMapboxToken(null);
-        } else if (data && data.token) {
+        
+        // Geocode each place's address
+        const geocodedResults = await Promise.all(
+          places.map(async (place) => {
+            if (place.location.lng !== 0 && place.location.lat !== 0) {
+              // If we already have coordinates, use them
+              return {
+                ...place,
+                coordinates: [place.location.lng, place.location.lat]
+              };
+            }
+            
+            // Otherwise, geocode the address
+            const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+              body: { address: place.location.address }
+            });
+            
+            if (error) {
+              console.error('Error geocoding address:', error);
+              return place;
+            }
+            
+            if (data.geocoding) {
+              return {
+                ...place,
+                coordinates: data.geocoding
+              };
+            }
+            
+            return place;
+          })
+        );
+        
+        // Get the token from the first request (they all have the same token)
+        const { data } = await supabase.functions.invoke('get-mapbox-token');
+        if (data && data.token) {
           setMapboxToken(data.token);
         }
+        
+        setGeocodedPlaces(geocodedResults);
       } catch (err) {
-        console.error('Failed to fetch Mapbox token:', err);
-        setMapboxToken(null);
+        console.error('Failed to geocode addresses:', err);
       } finally {
         setIsLoadingToken(false);
       }
     };
     
-    fetchMapboxToken();
-  }, []);
+    geocodePlaces();
+  }, [places]);
   
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
-      return places;
+      return geocodedPlaces;
     }
     
-    return places.filter((place) => 
+    return geocodedPlaces.filter((place) => 
       selectedFeatures.some(feature => place.features.includes(feature))
     );
-  }, [places, selectedFeatures]);
+  }, [geocodedPlaces, selectedFeatures]);
   
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map) return;
@@ -69,11 +100,13 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     let centerLat = 40.7128; // Default to NYC
     let centerLng = -74.006;
     
-    if (filteredPlaces.length > 0) {
-      const sumLat = filteredPlaces.reduce((sum, place) => sum + place.location.lat, 0);
-      const sumLng = filteredPlaces.reduce((sum, place) => sum + place.location.lng, 0);
-      centerLat = sumLat / filteredPlaces.length;
-      centerLng = sumLng / filteredPlaces.length;
+    const placesWithCoordinates = filteredPlaces.filter(p => p.coordinates);
+    
+    if (placesWithCoordinates.length > 0) {
+      const sumLat = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[1] || 0), 0);
+      const sumLng = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[0] || 0), 0);
+      centerLat = sumLat / placesWithCoordinates.length;
+      centerLng = sumLng / placesWithCoordinates.length;
     }
     
     const newMap = new mapboxgl.Map({
@@ -96,10 +129,14 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   useEffect(() => {
     if (!map) return;
     
+    // Remove existing markers
     const markers = document.querySelectorAll('.mapboxgl-marker');
     markers.forEach(marker => marker.remove());
     
+    // Add markers for places with coordinates
     filteredPlaces.forEach(place => {
+      if (!place.coordinates) return;
+      
       const el = document.createElement('div');
       el.className = 'custom-marker';
       el.style.width = '24px';
@@ -121,7 +158,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       });
       
       new mapboxgl.Marker(el)
-        .setLngLat([place.location.lng, place.location.lat])
+        .setLngLat(place.coordinates)
         .addTo(map);
     });
   }, [filteredPlaces, map]);
@@ -150,7 +187,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     ratingContainer.className = 'flex items-center';
     ratingContainer.innerHTML = `
       <svg class="h-3 w-3 text-yellow-400 mr-0.5" fill="currentColor" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-.181h4.914a1 1 0 00.951-.69l1.519-4.674z" />
       </svg>
       <span class="text-xs font-medium">${popupInfo.rating.toFixed(1)}</span>
     `;

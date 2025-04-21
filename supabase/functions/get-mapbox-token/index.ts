@@ -24,8 +24,29 @@ serve(async (req) => {
         }
       )
     }
+
+    // If address is provided, geocode it
+    const url = new URL(req.url)
+    const address = url.searchParams.get('address')
     
-    // Return the token
+    if (address) {
+      const geocodeUrl = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${MAPBOX_TOKEN}`
+      const response = await fetch(geocodeUrl)
+      const data = await response.json()
+      
+      return new Response(
+        JSON.stringify({ 
+          token: MAPBOX_TOKEN,
+          geocoding: data.features?.[0]?.center || null 
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        }
+      )
+    }
+    
+    // Return just the token if no address provided
     return new Response(
       JSON.stringify({ token: MAPBOX_TOKEN }),
       {
@@ -43,3 +64,4 @@ serve(async (req) => {
     )
   }
 })
+
