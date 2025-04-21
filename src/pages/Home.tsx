@@ -74,7 +74,10 @@ export default function Home() {
           </Button>
         </div>
 
-        <FeatureFilter onFilterChange={setSelectedFeatures} />
+        <FeatureFilter 
+          onFilterChange={setSelectedFeatures} 
+          selectedFeatures={selectedFeatures}
+        />
 
         {isLoading ? (
           <div className="py-20 text-center">

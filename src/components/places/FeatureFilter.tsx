@@ -30,7 +30,7 @@ export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilte
   };
 
   const selectedText = useMemo(() => {
-    if (selectedFeatures.length === 0) return '';
+    if (!selectedFeatures || selectedFeatures.length === 0) return '';
     return `Selected: ${selectedFeatures.join(', ')}`;
   }, [selectedFeatures]);
 
@@ -51,7 +51,7 @@ export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilte
             key={feature}
             variant="outline"
             className={`cursor-pointer ${
-              selectedFeatures.includes(feature) 
+              selectedFeatures?.includes(feature) 
                 ? "bg-locale-100 text-locale-800 border-locale-800" 
                 : ""
             }`}

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
@@ -10,6 +11,7 @@ import { createMapMarker } from './MapMarker';
 import { createMapPopup } from './MapPopup';
 import { HighlightedPlace } from './HighlightedPlace';
 import { MapPin } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MapViewProps {
