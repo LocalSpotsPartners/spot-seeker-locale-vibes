@@ -41,31 +41,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Initial check for existing session
     const checkSession = async () => {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-        });
-        setIsAuthenticated(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session check:", session);
+        
+        if (session) {
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+            avatar: session.user.user_metadata.avatar_url,
+          });
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     // Listen for auth changes
     const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
       if (session) {
         setUser({
           id: session.user.id,
           name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
+          avatar: session.user.user_metadata.avatar_url,
         });
         setIsAuthenticated(true);
       } else {
         setUser(null);
         setIsAuthenticated(false);
       }
+      setIsLoading(false);
     });
 
     checkSession();

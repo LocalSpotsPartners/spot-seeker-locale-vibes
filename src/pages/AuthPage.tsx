@@ -19,6 +19,8 @@ export default function AuthPage() {
       // If we have a session from the OAuth redirect, show success message
       if (data.session && window.location.hash) {
         toast.success("Successfully logged in!");
+        // Ensure navigation happens after toast is shown
+        setTimeout(() => navigate("/"), 500);
       } else if (error) {
         console.error("OAuth callback error:", error);
         toast.error(`Authentication error: ${error.message}`);
@@ -26,12 +28,15 @@ export default function AuthPage() {
     };
     
     handleOAuthCallback();
-  }, []);
+  }, [navigate]);
   
   // Redirect to home if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      console.log("User is authenticated, redirecting to home");
       navigate("/");
+    } else {
+      console.log("Auth status:", { isAuthenticated, isLoading });
     }
   }, [isAuthenticated, navigate, isLoading]);
   
