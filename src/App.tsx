@@ -14,6 +14,8 @@ import MapPage from "./pages/MapPage";
 import PlaceDetailPage from "./pages/PlaceDetailPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
+import WishlistPage from "./pages/WishlistPage";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 const queryClient = new QueryClient();
 
@@ -30,14 +32,18 @@ const App = () => {
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/map" element={<MapPage />} />
-              <Route path="/place/:id" element={<PlaceDetailPage />} />
-              <Route path="/login" element={<AuthPage />} />
-              <Route path="/signup" element={<AuthPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <div className="min-h-screen pb-16">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/map" element={<MapPage />} />
+                <Route path="/place/:id" element={<PlaceDetailPage />} />
+                <Route path="/login" element={<AuthPage />} />
+                <Route path="/signup" element={<AuthPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <BottomNav />
+            </div>
           </BrowserRouter>
         </TooltipProvider>
       </AuthProvider>

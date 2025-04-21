@@ -1,53 +1,99 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Place } from "@/types";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Star } from "lucide-react";
+import { Heart } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PlaceCardProps {
   place: Place;
 }
 
 export function PlaceCard({ place }: PlaceCardProps) {
-  const [imageError, setImageError] = useState(false);
-  
+  const [isWished, setIsWished] = useState(false);
+
+  // Check wish list status on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("wishList");
+    if (stored) {
+      const places = JSON.parse(stored) as Place[];
+      setIsWished(places.some((p) => p.id === place.id));
+    }
+  }, [place.id]);
+
+  // Toggle wish list
+  const handleWish = (e: React.MouseEvent) => {
+    e.preventDefault(); // prevent navigating to details
+    const stored = localStorage.getItem("wishList");
+    let places: Place[] = [];
+    if (stored) places = JSON.parse(stored) as Place[];
+
+    if (isWished) {
+      // Remove from wish list
+      const updated = places.filter((p) => p.id !== place.id);
+      localStorage.setItem("wishList", JSON.stringify(updated));
+      setIsWished(false);
+    } else {
+      // Add to wish list
+      if (!places.some((p) => p.id === place.id)) {
+        localStorage.setItem("wishList", JSON.stringify([...places, place]));
+        setIsWished(true);
+      }
+    }
+  };
+
   return (
-    <Card className="overflow-hidden h-full hover:shadow-md transition-shadow">
-      <Link to={`/place/${place.id}`}>
-        <AspectRatio ratio={16 / 9}>
+    <Card className="transition hover:shadow-lg relative group">
+      <Link to={`/place/${place.id}`} className="block">
+        {place.images?.[0] ? (
           <img
-            src={imageError ? "/placeholder.svg" : (place.images[0] || "/placeholder.svg")}
+            src={place.images[0]}
             alt={place.name}
-            className="object-cover w-full h-full"
-            onError={() => setImageError(true)}
+            className="h-40 w-full object-cover rounded-t"
           />
-        </AspectRatio>
+        ) : (
+          <div className="h-40 w-full bg-gray-200 flex items-center justify-center rounded-t">
+            <span className="text-4xl text-gray-300">📍</span>
+          </div>
+        )}
+
         <CardContent className="p-4">
-          <div className="space-y-2">
-            <div className="flex justify-between items-start">
-              <h3 className="font-semibold text-lg line-clamp-1">{place.name}</h3>
-              <div className="flex items-center">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400 mr-1" />
-                <span className="text-sm font-medium">{place.rating.toFixed(1)}</span>
-              </div>
-            </div>
-            <div className="flex items-start gap-1">
-              <MapPin className="h-4 w-4 text-gray-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-gray-500 line-clamp-1">{place.location.address}</p>
-            </div>
-            <p className="text-sm text-gray-600 line-clamp-2">{place.description}</p>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-lg">{place.name}</h2>
+            <button
+              onClick={handleWish}
+              title={isWished ? "Remove from Wish List" : "Add to Wish List"}
+              className="p-1 rounded-full hover:bg-locale-100 transition group"
+              aria-pressed={isWished}
+              aria-label="Toggle Wish List"
+            >
+              <Heart
+                size={20}
+                className={`transition ${isWished ? "fill-locale-500 text-locale-500" : "text-gray-300 group-hover:text-locale-500"}`}
+              />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-1 mb-2">
+            {place.features.slice(0, 3).map((feature) => (
+              <Badge key={feature} variant="outline">
+                {feature.charAt(0).toUpperCase() + feature.slice(1)}
+              </Badge>
+            ))}
+            {place.features.length > 3 && (
+              <Badge variant="outline" className="opacity-50">
+                +{place.features.length - 3}
+              </Badge>
+            )}
+          </div>
+
+          <div className="text-xs text-gray-500 mb-2">{place.location.address}</div>
+          <div>
+            <span className="mr-1 text-yellow-500">★</span>
+            <span className="font-medium">{place.rating.toFixed(1)}</span>
           </div>
         </CardContent>
-        <CardFooter className="px-4 py-3 pt-0 flex gap-2 flex-wrap">
-          {place.features.map((feature) => (
-            <Badge key={feature} variant="secondary" className="text-xs">
-              {feature.charAt(0).toUpperCase() + feature.slice(1)}
-            </Badge>
-          ))}
-        </CardFooter>
       </Link>
     </Card>
   );
