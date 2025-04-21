@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -132,6 +133,13 @@ export default function Home() {
     setSearchQuery(value);
     setSearchOpen(false);
   };
+
+  // Focus the input after selecting a suggestion
+  const focusSearchInput = () => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
   
   return <Layout>
       <div className="container py-8 pb-20 md:py-8">
@@ -183,20 +191,23 @@ export default function Home() {
                     sideOffset={5}
                     onEscapeKeyDown={() => setSearchOpen(false)}
                     onInteractOutside={() => {
-                      // Delay closing to allow for selection
+                      // Don't immediately close to allow selection
                       setTimeout(() => setSearchOpen(false), 100);
                     }}
                   >
-                    <Command shouldFilter={false}>
+                    <Command shouldFilter={false} loop={false}>
                       <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
                           {searchSuggestions.map(suggestion => (
                             <CommandItem 
                               key={`${suggestion.type}-${suggestion.value}`} 
-                              onSelect={() => handleSearchSelection(suggestion.value)} 
+                              onSelect={(value) => {
+                                handleSearchSelection(suggestion.value);
+                                setTimeout(focusSearchInput, 100);
+                              }} 
                               className="flex items-center gap-2 cursor-pointer"
-                              data-disabled-auto-select
+                              value={suggestion.value}
                             >
                               {suggestion.type === 'neighborhood' ? 
                                 <Map className="h-4 w-4 text-gray-400" /> : 
