@@ -43,9 +43,11 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
+      // Ensure the map container has proper dimensions
       if (mapContainer.current) {
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
+        mapContainer.current.style.width = '100%';
       }
       
       const newMap = new mapboxgl.Map({
@@ -98,15 +100,24 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [map, mapInitialized, filteredPlaces]);
   
+  // Add markers to the map
   useEffect(() => {
-    if (!map || !mapInitialized) return;
+    if (!map || !mapInitialized) {
+      console.log('Cannot add markers: map not ready', {
+        mapExists: !!map,
+        isInitialized: mapInitialized
+      });
+      return;
+    }
     
     console.log('Adding markers for', filteredPlaces.length, 'places');
     console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
+    // Clear existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
     
+    // Add new markers
     filteredPlaces.forEach(place => {
       if (place.coordinates) {
         const marker = createMapMarker({
@@ -118,8 +129,12 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         if (marker) {
           markersRef.current.push(marker);
         }
+      } else {
+        console.log(`No coordinates for ${place.name}`);
       }
     });
+    
+    console.log('Created', markersRef.current.length, 'markers');
   }, [filteredPlaces, map, mapInitialized]);
   
   useEffect(() => {
@@ -160,7 +175,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
             }, 
             error => {
               console.log('Error getting current position:', error);
-              toast.error('Could not get your location');
             }
           )}
         >

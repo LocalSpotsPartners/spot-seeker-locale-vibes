@@ -11,6 +11,7 @@ export const useGeocoding = (places: Place[]) => {
         console.log('Starting geocoding for', places.length, 'places');
         const geocodedResults = await Promise.all(
           places.map(async (place) => {
+            // If the place already has coordinates from lat/lng
             if (place.location.lng !== 0 && place.location.lat !== 0) {
               console.log(`Place ${place.name} already has coordinates:`, [place.location.lng, place.location.lat]);
               return {
@@ -19,6 +20,7 @@ export const useGeocoding = (places: Place[]) => {
               };
             }
             
+            // Otherwise try geocoding the address
             try {
               const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
                 body: { address: place.location.address }
@@ -51,7 +53,11 @@ export const useGeocoding = (places: Place[]) => {
       }
     };
     
-    geocodePlaces();
+    if (places.length > 0) {
+      geocodePlaces();
+    } else {
+      setGeocodedPlaces([]);
+    }
   }, [places]);
   
   return { geocodedPlaces };
