@@ -1,120 +1,104 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { User } from "@/types";
-
-// Mock authentication service
-// In a real app, you'd use a proper auth service like Firebase, Auth0, or Clerk
-
-type AuthState = {
-  user: User | null;
-  isAuthenticated: boolean;
-};
 
 // Local storage keys
 const USER_STORAGE_KEY = "locale-spots-user";
 
-// Initial auth state
-const initialAuthState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-};
-
-// Load user from storage on init
-const loadUserFromStorage = (): AuthState => {
-  try {
-    const storedUser = localStorage.getItem(USER_STORAGE_KEY);
-    if (storedUser) {
-      const user = JSON.parse(storedUser) as User;
-      return { user, isAuthenticated: true };
-    }
-  } catch (error) {
-    console.error("Failed to load user from storage:", error);
-  }
-  return initialAuthState;
-};
-
-// Save user to storage
-const saveUserToStorage = (user: User | null) => {
-  try {
-    if (user) {
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(USER_STORAGE_KEY);
-    }
-  } catch (error) {
-    console.error("Failed to save user to storage:", error);
-  }
-};
-
-// Mock login function - would be replaced with a real auth implementation
+// Login function
 export const login = async (email: string, password: string): Promise<User> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  
-  // Demo login - in a real app you'd validate against your auth service
-  if (email === "demo@example.com" && password === "password123") {
-    const user: User = {
-      id: "1",
-      name: "Demo User",
-      email: "demo@example.com",
-      avatar: "/placeholder.svg",
-    };
-    saveUserToStorage(user);
-    return user;
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) {
+    throw new Error(error.message);
   }
-  
-  throw new Error("Invalid email or password");
+
+  if (!data.user) {
+    throw new Error("No user data returned");
+  }
+
+  const user: User = {
+    id: data.user.id,
+    name: data.user.user_metadata.name || data.user.email?.split('@')[0] || 'User',
+    email: data.user.email || '',
+    avatar: data.user.user_metadata.avatar_url,
+  };
+
+  return user;
 };
 
-// Mock signup function
+// Signup function
 export const signup = async (name: string, email: string, password: string): Promise<User> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  
-  // In a real app, you would create a new user in your auth service
-  const user: User = {
-    id: Math.random().toString(36).slice(2, 11), // Generate random ID
-    name,
+  const { data, error } = await supabase.auth.signUp({
     email,
-    avatar: "/placeholder.svg",
+    password,
+    options: {
+      data: {
+        name,
+      },
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data.user) {
+    throw new Error("No user data returned");
+  }
+
+  const user: User = {
+    id: data.user.id,
+    name: name,
+    email: data.user.email || '',
+    avatar: data.user.user_metadata.avatar_url,
   };
-  
-  saveUserToStorage(user);
+
   return user;
 };
 
 // Social login function
 export const socialLogin = async (provider: 'google' | 'apple'): Promise<User> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 800));
-  
-  // Mock user data - in a real app, this would come from the OAuth provider
-  const user: User = {
-    id: Math.random().toString(36).slice(2, 11),
-    name: provider === 'google' ? 'Google User' : 'Apple User',
-    email: `${provider}.user@example.com`,
-    avatar: "/placeholder.svg",
-    provider
-  };
-  
-  saveUserToStorage(user);
-  return user;
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: provider,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  // Note: The actual user data will be handled by the auth state change listener
+  // This is because OAuth redirects the user and we get the data on return
+  return {} as User;
 };
 
 // Logout function
 export const logout = async (): Promise<void> => {
-  // Simulate API call delay
-  await new Promise((resolve) => setTimeout(resolve, 300));
-  saveUserToStorage(null);
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    throw new Error(error.message);
+  }
 };
 
 // Get current user
-export const getCurrentUser = (): User | null => {
-  const authState = loadUserFromStorage();
-  return authState.user;
+export const getCurrentUser = async (): Promise<User | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) return null;
+
+  return {
+    id: user.id,
+    name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
+    email: user.email || '',
+    avatar: user.user_metadata.avatar_url,
+  };
 };
 
 // Check if user is authenticated
-export const isAuthenticated = (): boolean => {
-  const authState = loadUserFromStorage();
-  return authState.isAuthenticated;
+export const isAuthenticated = async (): Promise<boolean> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return !!session;
 };

@@ -1,7 +1,7 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
-import { getCurrentUser, login as authLogin, logout as authLogout, signup as authSignup, socialLogin as authSocialLogin } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { login as authLogin, logout as authLogout, signup as authSignup, socialLogin as authSocialLogin } from "@/lib/auth";
 
 type Subscription = {
   isPremium: boolean;
@@ -61,39 +61,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [subscription, setSubscription] = useState<Subscription>(DEFAULT_SUBSCRIPTION);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    const loadUser = () => {
-      const currentUser = getCurrentUser();
-      setUser(currentUser);
-      
-      if (currentUser) {
-        const storedSubscription = getStoredSubscription(currentUser.id);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const user: User = {
+          id: session.user.id,
+          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          avatar: session.user.user_metadata.avatar_url,
+        };
+        setUser(user);
         
-        // Check if trial has expired
-        if (storedSubscription.isTrialActive && storedSubscription.trialEndDate) {
-          const now = new Date();
-          const trialEnd = new Date(storedSubscription.trialEndDate);
-          
-          if (now > trialEnd) {
-            // Trial expired
-            const updatedSubscription = {
-              ...storedSubscription,
-              isTrialActive: false,
-            };
-            setSubscription(updatedSubscription);
-            saveSubscription(currentUser.id, updatedSubscription);
-          } else {
-            setSubscription(storedSubscription);
-          }
-        } else {
+        // Load subscription data
+        if (user.id) {
+          const storedSubscription = getStoredSubscription(user.id);
+          setSubscription(storedSubscription);
+        }
+      } else {
+        setUser(null);
+        setSubscription(DEFAULT_SUBSCRIPTION);
+      }
+      setIsLoading(false);
+    });
+
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const user: User = {
+          id: session.user.id,
+          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          avatar: session.user.user_metadata.avatar_url,
+        };
+        setUser(user);
+        
+        if (user.id) {
+          const storedSubscription = getStoredSubscription(user.id);
           setSubscription(storedSubscription);
         }
       }
-      
       setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
     };
-    
-    loadUser();
   }, []);
 
   const login = async (email: string, password: string) => {
