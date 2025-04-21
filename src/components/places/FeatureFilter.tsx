@@ -22,6 +22,7 @@ const availableFeatures: PlaceFeature[] = [
 ];
 
 export function FeatureFilter({ onFilterChange }: FeatureFilterProps) {
+  // Initialize state with an empty array
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
 
   // Emits selected features to parent component
@@ -41,22 +42,28 @@ export function FeatureFilter({ onFilterChange }: FeatureFilterProps) {
         <h3 className="font-medium">Filter by features</h3>
       </div>
       
-      <ToggleGroup 
-        type="multiple"
-        className="flex flex-wrap gap-2 justify-start"
-        value={selectedFeatures}
-        onValueChange={handleValueChange}
-      >
+      <div className="flex flex-wrap gap-2 justify-start">
         {availableFeatures.map(feature => (
-          <ToggleGroupItem 
-            key={feature} 
-            value={feature}
-            className="data-[state=on]:bg-locale-100 data-[state=on]:text-locale-800 border"
+          <Badge 
+            key={feature}
+            variant="outline"
+            className={`cursor-pointer ${
+              selectedFeatures.includes(feature) 
+                ? "bg-locale-100 text-locale-800" 
+                : ""
+            }`}
+            onClick={() => {
+              setSelectedFeatures(prev => 
+                prev.includes(feature)
+                  ? prev.filter(item => item !== feature)
+                  : [...prev, feature]
+              );
+            }}
           >
             {feature.charAt(0).toUpperCase() + feature.slice(1)}
-          </ToggleGroupItem>
+          </Badge>
         ))}
-      </ToggleGroup>
+      </div>
     </div>
   );
 }
