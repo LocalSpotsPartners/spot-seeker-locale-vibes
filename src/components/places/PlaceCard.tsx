@@ -1,4 +1,3 @@
-
 import { Place } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +21,6 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
   const navigate = useNavigate();
 
   const handleImageClick = (e: React.MouseEvent) => {
-    // Stop propagation to prevent card click from triggering
     e.stopPropagation();
   };
 
@@ -64,7 +62,12 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
 
       <CardContent className="p-4">
         <h3 className="font-semibold mb-1 text-lg md:text-xl">{place.name}</h3>
-        <p className="text-gray-500 text-sm mb-3 md:text-base">{place.location.address}</p>
+        <div className="flex flex-col gap-1">
+          {place.neighborhood && (
+            <p className="text-gray-600 text-sm md:text-base">{place.neighborhood}</p>
+          )}
+          <p className="text-gray-500 text-sm md:text-base">{place.location.address}</p>
+        </div>
         
         <div className="flex flex-wrap gap-1">
           {place.features.slice(0, placeFeaturesLimit).map((feature) => (

@@ -1,4 +1,3 @@
-
 // Define types used throughout the application
 export type User = {
   id: string;
@@ -32,7 +31,8 @@ export type Place = {
   features: PlaceFeature[];
   location: Location;
   rating: number;
-  coordinates?: [number, number]; // Added optional coordinates property
+  neighborhood?: string;
+  coordinates?: [number, number];
 };
 
 export type Review = {

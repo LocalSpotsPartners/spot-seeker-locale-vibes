@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -63,7 +62,8 @@ export default function Home() {
               lat: Number(item.lat) || 0,
               lng: Number(item.lng) || 0,
               address: item.address || ''
-            }
+            },
+            neighborhood: item.neighborhood || ''
           }));
           setPlaces(transformedPlaces);
         }
@@ -81,6 +81,18 @@ export default function Home() {
   const searchSuggestions = useMemo(() => {
     if (!searchQuery.trim()) return [];
     
+    const neighborhoodSuggestions = Array.from(
+      new Set(
+        places
+          .map(p => p.neighborhood)
+          .filter(Boolean)
+      )
+    )
+    .filter(neighborhood => 
+      neighborhood?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map(neighborhood => ({ type: 'neighborhood', value: neighborhood || '' }));
+    
     const locationSuggestions = Array.from(
       new Set(
         places
@@ -97,7 +109,7 @@ export default function Home() {
       .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .map(p => ({ type: 'name', value: p.name }));
     
-    return [...locationSuggestions, ...nameSuggestions].slice(0, 5);
+    return [...neighborhoodSuggestions, ...locationSuggestions, ...nameSuggestions].slice(0, 5);
   }, [places, searchQuery]);
 
   const filteredPlaces = useMemo(() => {
@@ -109,7 +121,8 @@ export default function Home() {
       // Search query filter
       const matchesSearch = !searchQuery || 
         place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        place.location.address.toLowerCase().includes(searchQuery.toLowerCase());
+        place.location.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (place.neighborhood && place.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()));
 
       // Map bounds filter
       const withinBounds = !mapBounds || (
@@ -159,7 +172,7 @@ export default function Home() {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
                     type="text"
-                    placeholder="Search by name or location..."
+                    placeholder="Search by name, location, or neighborhood..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9 md:text-base"
@@ -184,14 +197,17 @@ export default function Home() {
                             onSelect={() => handleSearchSelection(suggestion.value)}
                             className="flex items-center gap-2"
                           >
-                            {suggestion.type === 'location' ? (
+                            {suggestion.type === 'neighborhood' ? (
+                              <Map className="h-4 w-4 text-gray-400" />
+                            ) : suggestion.type === 'location' ? (
                               <Map className="h-4 w-4 text-gray-400" />
                             ) : (
                               <Search className="h-4 w-4 text-gray-400" />
                             )}
-                            <span>{suggestion.value}</span>
+                            <span className="text-base">{suggestion.value}</span>
                             <span className="text-xs text-gray-400 ml-auto">
-                              {suggestion.type === 'location' ? 'Area' : 'Place'}
+                              {suggestion.type === 'neighborhood' ? 'Neighborhood' : 
+                               suggestion.type === 'location' ? 'Area' : 'Place'}
                             </span>
                           </CommandItem>
                         ))}
