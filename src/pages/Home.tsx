@@ -160,7 +160,7 @@ export default function Home() {
                     setSearchOpen(false);
                   }
                 }}
-                onClick={() => {
+                onFocus={() => {
                   if (searchQuery.trim() !== '') {
                     setSearchOpen(true);
                   }
@@ -184,7 +184,10 @@ export default function Home() {
                     align="start" 
                     sideOffset={5}
                     onEscapeKeyDown={() => setSearchOpen(false)}
-                    onInteractOutside={() => setSearchOpen(false)}
+                    onInteractOutside={() => {
+                      // Delay closing to allow for selection
+                      setTimeout(() => setSearchOpen(false), 100);
+                    }}
                   >
                     <Command>
                       <CommandList>
