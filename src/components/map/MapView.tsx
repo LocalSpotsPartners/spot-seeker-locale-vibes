@@ -74,7 +74,7 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
 
   const { handleUserLocation } = useUserLocation(map, mapInitialized);
 
-  // Handle viewport changes
+  // Still notify about viewport changes but don't use them for filtering
   if (map && mapInitialized && onViewportChange) {
     map.on('moveend', () => {
       const bounds = map.getBounds();

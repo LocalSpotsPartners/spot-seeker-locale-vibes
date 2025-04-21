@@ -26,18 +26,29 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
         mapContainer.current.style.position = 'relative';
-        
-        // Force the container to be visible
         mapContainer.current.style.display = 'block';
         mapContainer.current.style.visibility = 'visible';
         mapContainer.current.style.opacity = '1';
       }
       
-      // Small delay to ensure DOM is ready
+      // Create the map with a small delay to ensure DOM is ready
       setTimeout(() => {
         try {
+          if (!mapContainer.current) {
+            console.error('Map container is not available');
+            return;
+          }
+
+          console.log('Creating map instance...');
+          const containerDimensions = mapContainer.current.getBoundingClientRect();
+          console.log('Container dimensions:', {
+            width: containerDimensions.width,
+            height: containerDimensions.height,
+            isVisible: containerDimensions.width > 0 && containerDimensions.height > 0
+          });
+          
           const newMap = new mapboxgl.Map({
-            container: mapContainer.current!,
+            container: mapContainer.current,
             style: 'mapbox://styles/mapbox/streets-v12',
             center: [-74.006, 40.7128],
             zoom: 11.5,
@@ -62,17 +73,17 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
           toast.error('Failed to create map: ' + (err instanceof Error ? err.message : 'Unknown error'));
         }
       }, 100);
-      
-      return () => {
-        if (map) {
-          console.log('Cleaning up map');
-          map.remove();
-        }
-      };
     } catch (err) {
       console.error('Error initializing map:', err);
       toast.error('Failed to initialize map: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
+    
+    return () => {
+      if (map) {
+        console.log('Cleaning up map');
+        map.remove();
+      }
+    };
   }, [mapboxToken, onMapLoad, mapContainer, map]);
 
   return { map, mapInitialized };
