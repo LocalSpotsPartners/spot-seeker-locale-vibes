@@ -13,11 +13,13 @@ export const useMapbox = () => {
         setIsLoadingToken(true);
         setError(null);
         
+        console.log('Fetching Mapbox token...');
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) throw error;
         
         if (data && data.token) {
+          console.log('Successfully received Mapbox token');
           setMapboxToken(data.token);
         } else {
           throw new Error('No Mapbox token returned from the function');

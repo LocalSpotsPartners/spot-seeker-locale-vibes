@@ -9,6 +9,7 @@ import { MapLoading } from './MapLoading';
 import { MapError } from './MapError';
 import { createMapMarker } from './MapMarker';
 import { createMapPopup } from './MapPopup';
+import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MapViewProps {
@@ -53,10 +54,12 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       newMap.on('load', () => {
         console.log('Map loaded successfully');
         setMapInitialized(true);
+        toast.success('Map loaded successfully');
       });
       
       newMap.on('error', (e) => {
         console.error('Map error:', e);
+        toast.error('Error loading map');
       });
       
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -71,6 +74,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       };
     } catch (err) {
       console.error('Error initializing map:', err);
+      toast.error('Failed to initialize map');
     }
   }, [mapboxToken, map]);
   
@@ -87,6 +91,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       const centerLng = sumLng / placesWithCoordinates.length;
       
       map.setCenter([centerLng, centerLat]);
+      console.log('Map center set to:', [centerLng, centerLat]);
     }
   }, [map, mapInitialized, filteredPlaces]);
   
@@ -95,6 +100,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     if (!map || !mapInitialized) return;
     
     console.log('Adding markers for', filteredPlaces.length, 'places');
+    console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
     // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
@@ -123,10 +129,12 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     const popups = document.querySelectorAll('.mapboxgl-popup');
     popups.forEach(popup => popup.remove());
     
-    if (!popupInfo || !popupInfo.coordinates) return;
-    
-    const popup = createMapPopup(popupInfo, map);
-    popup.on('close', () => setPopupInfo(null));
+    if (popupInfo && popupInfo.coordinates) {
+      const popup = createMapPopup(popupInfo, map);
+      if (popup) {
+        popup.on('close', () => setPopupInfo(null));
+      }
+    }
   }, [popupInfo, map, mapInitialized]);
 
   if (isLoadingToken) {
@@ -138,7 +146,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] w-full">
+    <div className="h-[calc(100vh-4rem)] w-full bg-gray-100">
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <Button 
           size="sm" 
@@ -149,15 +157,24 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
                   center: [position.coords.longitude, position.coords.latitude],
                   zoom: 13
                 });
+                toast.success('Located your position');
               }
             }, 
-            error => console.log('Error getting current position:', error)
+            error => {
+              console.log('Error getting current position:', error);
+              toast.error('Could not get your location');
+            }
           )}
         >
           My Location
         </Button>
       </div>
       <div ref={mapContainer} className="w-full h-full" />
+      <div className="absolute bottom-4 left-4 z-10">
+        <div className="bg-white p-2 rounded shadow text-xs">
+          {filteredPlaces.filter(p => p.coordinates).length} locations on map
+        </div>
+      </div>
     </div>
   );
 }
