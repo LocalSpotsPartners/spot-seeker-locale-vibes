@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -24,6 +25,7 @@ export default function PlaceDetailPage() {
       }
 
       try {
+        // Fetch place details
         const { data: placeData, error: placeError } = await supabase
           .from('places')
           .select('*')
@@ -33,8 +35,24 @@ export default function PlaceDetailPage() {
         if (placeError) throw placeError;
         if (!placeData) throw new Error('Place not found');
         
-        setPlace(placeData as Place);
+        // Transform to our Place type
+        const transformedPlace: Place = {
+          id: placeData.id,
+          name: placeData.name,
+          description: placeData.description || '',
+          images: placeData.images || [],
+          features: placeData.features || [],
+          rating: placeData.rating || 0,
+          location: {
+            lat: Number(placeData.lat) || 0,
+            lng: Number(placeData.lng) || 0,
+            address: placeData.address || ''
+          }
+        };
         
+        setPlace(transformedPlace);
+        
+        // Fetch reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('*')
@@ -42,7 +60,22 @@ export default function PlaceDetailPage() {
           .order('created_at', { ascending: false });
         
         if (reviewsError) throw reviewsError;
-        setReviews(reviewsData as Review[] || []);
+        
+        // Transform reviews to our Review type
+        if (reviewsData) {
+          const transformedReviews: Review[] = reviewsData.map(review => ({
+            id: review.id,
+            placeId: review.place_id || '',
+            userId: review.user_id || '',
+            userName: review.user_name,
+            userAvatar: review.user_avatar || '',
+            rating: review.rating || 0,
+            comment: review.comment || '',
+            date: review.created_at || new Date().toISOString()
+          }));
+          
+          setReviews(transformedReviews);
+        }
       } catch (error) {
         console.error("Failed to load place details:", error);
         setError(error instanceof Error ? error.message : "Failed to load place details");

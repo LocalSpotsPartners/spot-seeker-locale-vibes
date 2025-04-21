@@ -9,7 +9,83 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      places: {
+        Row: {
+          address: string | null
+          description: string | null
+          features: string[] | null
+          id: string
+          images: string[] | null
+          lat: number | null
+          lng: number | null
+          name: string
+          rating: number | null
+        }
+        Insert: {
+          address?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          images?: string[] | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          rating?: number | null
+        }
+        Update: {
+          address?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          images?: string[] | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          rating?: number | null
+        }
+        Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          place_id: string | null
+          rating: number | null
+          user_avatar: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          place_id?: string | null
+          rating?: number | null
+          user_avatar?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          place_id?: string | null
+          rating?: number | null
+          user_avatar?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

@@ -10,6 +10,7 @@ import { ReviewForm } from "../reviews/ReviewForm";
 import { MapPin, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Database } from "@/integrations/supabase/types";
 
 interface PlaceDetailProps {
   place: Place;
@@ -38,13 +39,23 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
       const { data, error } = await supabase
         .from('reviews')
         .insert(newReview)
-        .select()
-        .single();
+        .select();
       
       if (error) throw error;
       
-      if (data) {
-        setLocalReviews(prev => [data as Review, ...prev]);
+      if (data && data.length > 0) {
+        const addedReview: Review = {
+          id: data[0].id,
+          placeId: data[0].place_id || '',
+          userId: data[0].user_id || '',
+          userName: data[0].user_name,
+          userAvatar: data[0].user_avatar,
+          rating: data[0].rating || 0,
+          comment: data[0].comment || '',
+          date: data[0].created_at || new Date().toISOString()
+        };
+        
+        setLocalReviews(prev => [addedReview, ...prev]);
         setShowForm(false);
       }
     } catch (error) {

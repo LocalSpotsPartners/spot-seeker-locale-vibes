@@ -19,7 +19,24 @@ export default function MapPage() {
           .select('*');
         
         if (error) throw error;
-        setPlaces(data || []);
+        
+        if (data) {
+          // Transform the data to match our Place type
+          const transformedPlaces: Place[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || '',
+            images: item.images || [],
+            features: item.features || [],
+            rating: item.rating || 0,
+            location: {
+              lat: Number(item.lat) || 0,
+              lng: Number(item.lng) || 0,
+              address: item.address || ''
+            }
+          }));
+          setPlaces(transformedPlaces);
+        }
       } catch (error) {
         console.error("Failed to load places:", error);
       } finally {

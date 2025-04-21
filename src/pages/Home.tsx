@@ -26,7 +26,20 @@ export default function Home() {
         }
 
         if (data) {
-          setPlaces(data);
+          const transformedPlaces: Place[] = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            description: item.description || '',
+            images: item.images || [],
+            features: item.features || [],
+            rating: item.rating || 0,
+            location: {
+              lat: Number(item.lat) || 0,
+              lng: Number(item.lng) || 0,
+              address: item.address || ''
+            }
+          }));
+          setPlaces(transformedPlaces);
         }
       } catch (error) {
         console.error("Failed to load places:", error);
