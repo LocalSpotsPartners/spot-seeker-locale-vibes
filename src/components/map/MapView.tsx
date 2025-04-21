@@ -44,12 +44,19 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
+      // Force the map container to have a height
+      if (mapContainer.current) {
+        mapContainer.current.style.height = '100%';
+        mapContainer.current.style.minHeight = '500px';
+      }
+      
       // Create a new map instance
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
         center: [-74.006, 40.7128], // Default to NYC
-        zoom: 11.5
+        zoom: 11.5,
+        preserveDrawingBuffer: true // Helps with some rendering issues
       });
       
       // Add event listeners
@@ -61,7 +68,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       
       newMap.on('error', (e) => {
         console.error('Map error:', e);
-        toast.error('Error loading map');
+        toast.error('Error loading map: ' + e.error?.message || 'Unknown error');
       });
       
       // Add navigation controls
@@ -77,7 +84,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       };
     } catch (err) {
       console.error('Error initializing map:', err);
-      toast.error('Failed to initialize map');
+      toast.error('Failed to initialize map: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
   }, [mapboxToken]);
   
@@ -149,7 +156,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   }
 
   return (
-    <div className="h-full w-full bg-gray-100 relative">
+    <div className="h-full w-full bg-gray-100 relative" style={{ minHeight: '500px' }}>
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <Button 
           size="sm" 
@@ -172,7 +179,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
           My Location
         </Button>
       </div>
-      <div ref={mapContainer} className="w-full h-full" />
+      <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '500px' }} />
       <div className="absolute bottom-4 left-4 z-10">
         <div className="bg-white p-2 rounded shadow text-xs">
           {filteredPlaces.filter(p => p.coordinates).length} locations on map

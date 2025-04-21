@@ -71,7 +71,7 @@ export default function MapPage() {
             <p className="ml-3 text-gray-600">Loading places...</p>
           </div>
         ) : (
-          <div className="pt-20 h-[calc(100%-5rem)]">
+          <div className="pt-20 h-[calc(100%-5rem)]" style={{ minHeight: '500px' }}>
             <MapView places={places} selectedFeatures={selectedFeatures} />
           </div>
         )}
