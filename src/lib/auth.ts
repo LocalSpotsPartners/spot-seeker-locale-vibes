@@ -67,7 +67,11 @@ export const socialLogin = async (provider: 'google' | 'apple'): Promise<void> =
     console.log(`Attempting to login with ${provider}...`);
     
     // Use correct redirect URL based on the current environment
-    const redirectTo = window.location.origin + '/auth';
+    // For the production build, we use the current origin
+    // The /auth path will handle the OAuth callback
+    const redirectTo = `${window.location.origin}/login`;
+    
+    console.log(`Setting redirect URL to: ${redirectTo}`);
     
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: provider,
