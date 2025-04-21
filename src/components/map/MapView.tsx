@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
@@ -36,7 +35,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     );
   }, [geocodedPlaces, selectedFeatures]);
   
-  // Initialize map when token is available
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map) return;
     
@@ -44,22 +42,19 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
-      // Force the map container to have a height
       if (mapContainer.current) {
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
       }
       
-      // Create a new map instance
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-74.006, 40.7128], // Default to NYC
+        center: [-74.006, 40.7128],
         zoom: 11.5,
-        preserveDrawingBuffer: true // Helps with some rendering issues
+        preserveDrawingBuffer: true
       });
       
-      // Add event listeners
       newMap.on('load', () => {
         console.log('Map loaded successfully');
         setMapInitialized(true);
@@ -71,7 +66,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         toast.error('Error loading map: ' + e.error?.message || 'Unknown error');
       });
       
-      // Add navigation controls
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
       
       setMap(newMap);
@@ -88,7 +82,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [mapboxToken]);
   
-  // Set map center based on filtered places
   useEffect(() => {
     if (!map || !mapInitialized || filteredPlaces.length === 0) return;
     
@@ -105,18 +98,15 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [map, mapInitialized, filteredPlaces]);
   
-  // Add markers for filtered places
   useEffect(() => {
     if (!map || !mapInitialized) return;
     
     console.log('Adding markers for', filteredPlaces.length, 'places');
     console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
-    // Remove existing markers
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
     
-    // Add markers for places with coordinates
     filteredPlaces.forEach(place => {
       if (place.coordinates) {
         const marker = createMapMarker({
@@ -132,7 +122,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     });
   }, [filteredPlaces, map, mapInitialized]);
   
-  // Handle popup display
   useEffect(() => {
     if (!map || !mapInitialized) return;
     
@@ -167,7 +156,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
                   center: [position.coords.longitude, position.coords.latitude],
                   zoom: 13
                 });
-                toast.success('Located your position');
               }
             }, 
             error => {
