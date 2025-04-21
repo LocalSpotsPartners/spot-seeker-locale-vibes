@@ -3,20 +3,23 @@ import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { MapView } from "@/components/map/MapView";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
-import { PlaceFeature } from "@/types";
-import { db } from "@/db/database";
+import { PlaceFeature, Place } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function MapPage() {
-  const [places, setPlaces] = useState([]);
+  const [places, setPlaces] = useState<Place[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load places from the database
   useEffect(() => {
     const loadPlaces = async () => {
       try {
-        const allPlaces = await db.places.toArray();
-        setPlaces(allPlaces);
+        const { data, error } = await supabase
+          .from('places')
+          .select('*');
+        
+        if (error) throw error;
+        setPlaces(data || []);
       } catch (error) {
         console.error("Failed to load places:", error);
       } finally {

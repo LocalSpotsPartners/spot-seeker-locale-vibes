@@ -5,12 +5,13 @@ import { PlaceDetail } from "@/components/places/PlaceDetail";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Place, Review } from "@/types";
 
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [place, setPlace] = useState(null);
-  const [reviews, setReviews] = useState([]);
+  const [place, setPlace] = useState<Place | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,34 +24,28 @@ export default function PlaceDetailPage() {
       }
 
       try {
-        // Load the place details
         const { data: placeData, error: placeError } = await supabase
           .from('places')
           .select('*')
           .eq('id', id)
           .single();
         
-        if (placeError || !placeData) {
-          throw placeError || new Error('Place not found');
-        }
+        if (placeError) throw placeError;
+        if (!placeData) throw new Error('Place not found');
         
-        setPlace(placeData);
+        setPlace(placeData as Place);
         
-        // Load reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('*')
           .eq('place_id', id)
           .order('created_at', { ascending: false });
         
-        if (reviewsError) {
-          throw reviewsError;
-        }
-        
-        setReviews(reviewsData || []);
+        if (reviewsError) throw reviewsError;
+        setReviews(reviewsData as Review[] || []);
       } catch (error) {
         console.error("Failed to load place details:", error);
-        setError("Failed to load place details");
+        setError(error instanceof Error ? error.message : "Failed to load place details");
       } finally {
         setIsLoading(false);
       }

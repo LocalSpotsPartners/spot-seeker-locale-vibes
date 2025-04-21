@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { Place, Review } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,53 +6,51 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewList } from "../reviews/ReviewList";
-import { MapPin, Star } from "lucide-react";
 import { ReviewForm } from "../reviews/ReviewForm";
-import { db } from "@/db/database";
+import { MapPin, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlaceDetailProps {
   place: Place;
   reviews: Review[];
 }
 
-export function PlaceDetail({ place, reviews }: PlaceDetailProps) {
+export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps) {
   const { isAuthenticated, user } = useAuth();
   const [activeTab, setActiveTab] = useState("info");
-  const [localReviews, setLocalReviews] = useState<Review[]>(reviews);
+  const [localReviews, setLocalReviews] = useState<Review[]>(initialReviews);
   const [showForm, setShowForm] = useState(false);
   
   const handleAddReview = useCallback(async (review: Omit<Review, "id" | "userId" | "userName" | "userAvatar" | "date">) => {
     if (!user) return;
     
-    const newReview: Review = {
-      id: Math.random().toString(36).substring(2, 15),
-      userId: user.id,
-      userName: user.name,
-      userAvatar: user.avatar,
-      date: new Date().toISOString().split('T')[0],
-      ...review
+    const newReview = {
+      place_id: place.id,
+      user_id: user.id,
+      user_name: user.name,
+      user_avatar: user.avatar,
+      rating: review.rating,
+      comment: review.comment
     };
     
     try {
-      // Save to IndexedDB
-      await db.reviews.add(newReview);
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert(newReview)
+        .select()
+        .single();
       
-      // Update the local state
-      setLocalReviews(prev => [newReview, ...prev]);
-      setShowForm(false);
+      if (error) throw error;
       
-      // Update the place rating (average of all reviews)
-      const allReviews = [...localReviews, newReview];
-      const averageRating = allReviews.reduce((acc, review) => acc + review.rating, 0) / allReviews.length;
-      
-      await db.places.update(place.id, {
-        rating: parseFloat(averageRating.toFixed(1))
-      });
+      if (data) {
+        setLocalReviews(prev => [data as Review, ...prev]);
+        setShowForm(false);
+      }
     } catch (error) {
       console.error("Failed to add review:", error);
     }
-  }, [user, localReviews, place.id]);
+  }, [user, place.id]);
   
   return (
     <div className="space-y-6">

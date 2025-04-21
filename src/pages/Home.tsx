@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -7,6 +6,7 @@ import { PlaceFeature, Place } from "@/types";
 import { Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { MapView } from "@/components/map/MapView";
 
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -14,7 +14,6 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
 
-  // Load places from Supabase
   useEffect(() => {
     const loadPlaces = async () => {
       try {
