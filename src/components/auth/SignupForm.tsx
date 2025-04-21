@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Google, Apple } from "lucide-react";
 
 export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
-  const { signup } = useAuth();
+  const { signup, socialLogin } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,6 +29,15 @@ export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
     }
   };
 
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+    setError(null);
+    try {
+      await socialLogin(provider);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : `Failed to login with ${provider}`);
+    }
+  };
+
   return (
     <div className="space-y-6 w-full max-w-md mx-auto">
       <div className="space-y-2 text-center">
@@ -40,6 +50,38 @@ export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+      
+      <div className="flex flex-col gap-4">
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full flex items-center justify-center gap-2"
+          onClick={() => handleSocialLogin('google')}
+        >
+          <Google size={18} />
+          <span>Continue with Google</span>
+        </Button>
+        <Button 
+          variant="outline" 
+          type="button" 
+          className="w-full flex items-center justify-center gap-2"
+          onClick={() => handleSocialLogin('apple')}
+        >
+          <Apple size={18} />
+          <span>Continue with Apple</span>
+        </Button>
+      </div>
+      
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-white px-2 text-muted-foreground">
+            Or continue with email
+          </span>
+        </div>
+      </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">

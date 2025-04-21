@@ -82,6 +82,24 @@ export const signup = async (name: string, email: string, password: string): Pro
   return user;
 };
 
+// Social login function
+export const socialLogin = async (provider: 'google' | 'apple'): Promise<User> => {
+  // Simulate API call delay
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  
+  // Mock user data - in a real app, this would come from the OAuth provider
+  const user: User = {
+    id: Math.random().toString(36).slice(2, 11),
+    name: provider === 'google' ? 'Google User' : 'Apple User',
+    email: `${provider}.user@example.com`,
+    avatar: "/placeholder.svg",
+    provider
+  };
+  
+  saveUserToStorage(user);
+  return user;
+};
+
 // Logout function
 export const logout = async (): Promise<void> => {
   // Simulate API call delay

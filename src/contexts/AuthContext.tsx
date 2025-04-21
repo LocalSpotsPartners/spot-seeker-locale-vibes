@@ -1,7 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
-import { getCurrentUser, login as authLogin, logout as authLogout, signup as authSignup } from "@/lib/auth";
+import { getCurrentUser, login as authLogin, logout as authLogout, signup as authSignup, socialLogin as authSocialLogin } from "@/lib/auth";
 
 type AuthContextType = {
   user: User | null;
@@ -9,6 +9,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
+  socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -49,6 +50,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const socialLogin = async (provider: 'google' | 'apple') => {
+    try {
+      setIsLoading(true);
+      const user = await authSocialLogin(provider);
+      setUser(user);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const logout = async () => {
     try {
       setIsLoading(true);
@@ -65,6 +76,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     login,
     signup,
+    socialLogin,
     logout
   };
 

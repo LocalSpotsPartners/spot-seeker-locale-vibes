@@ -5,6 +5,7 @@ export type User = {
   name: string;
   email: string;
   avatar?: string;
+  provider?: 'google' | 'apple';
 };
 
 export type PlaceFeature = 
