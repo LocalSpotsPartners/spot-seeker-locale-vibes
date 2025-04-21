@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
@@ -20,8 +20,13 @@ export default function Home() {
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  
-  // Remove mapBounds state since we don't want to filter based on map bounds
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [mapBounds, setMapBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
   
   useEffect(() => {
     const loadPlaces = async () => {
@@ -99,14 +104,26 @@ export default function Home() {
         place.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
         (place.neighborhood && place.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()));
         
-      return matchesFeatures && matchesSearch;
+      // Map bounds filter for desktop only
+      const matchesBounds = !mapBounds || 
+        (place.location &&
+          place.location.lat <= mapBounds.north &&
+          place.location.lat >= mapBounds.south &&
+          place.location.lng <= mapBounds.east &&
+          place.location.lng >= mapBounds.west);
+      
+      return matchesFeatures && matchesSearch && matchesBounds;
     });
-  }, [places, selectedFeatures, searchQuery]);
+  }, [places, selectedFeatures, searchQuery, mapBounds]);
   
-  // Remove the filtering by map bounds by making this function empty
-  const handleMapViewportChange = () => {
-    // We no longer use this to filter places
-    console.log("Map viewport changed, but not filtering places by bounds");
+  const handleMapViewportChange = (bounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }) => {
+    console.log("Map viewport changed, filtering places by bounds");
+    setMapBounds(bounds);
   };
   
   const handlePlaceHover = (place: Place | null) => {
@@ -116,6 +133,10 @@ export default function Home() {
   const handleSearchSelection = (value: string) => {
     setSearchQuery(value);
     setSearchOpen(false);
+    // Focus back on the input so user can continue typing
+    setTimeout(() => {
+      searchInputRef.current?.focus();
+    }, 100);
   };
   
   return <Layout>
@@ -128,9 +149,10 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input 
+                ref={searchInputRef}
                 type="text" 
                 placeholder="Search by name or neighborhood..." 
                 value={searchQuery} 
@@ -153,7 +175,7 @@ export default function Home() {
               {searchSuggestions.length > 0 && (
                 <Popover open={searchOpen} onOpenChange={setSearchOpen}>
                   <PopoverTrigger asChild>
-                    <div className="w-full" />
+                    <div className="w-0 h-0 overflow-hidden" />
                   </PopoverTrigger>
                   <PopoverContent className="p-0 w-[300px]" align="start">
                     <Command>

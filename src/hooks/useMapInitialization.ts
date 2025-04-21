@@ -29,6 +29,14 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
         mapContainer.current.style.display = 'block';
         mapContainer.current.style.visibility = 'visible';
         mapContainer.current.style.opacity = '1';
+        
+        // Ensure the parent container is properly sized
+        const parentElement = mapContainer.current.parentElement;
+        if (parentElement) {
+          parentElement.style.height = '100%';
+          parentElement.style.position = 'relative';
+          parentElement.style.display = 'flex';
+        }
       }
       
       // Create the map with a small delay to ensure DOM is ready
@@ -55,9 +63,15 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
             preserveDrawingBuffer: true
           });
           
+          // Set min/max zoom limits to prevent extreme zooming
+          newMap.setMinZoom(9);
+          newMap.setMaxZoom(17);
+          
           newMap.on('load', () => {
             console.log('Map loaded successfully');
             setMapInitialized(true);
+            // Force a resize to ensure the map fills the container
+            window.dispatchEvent(new Event('resize'));
             onMapLoad?.();
           });
           
