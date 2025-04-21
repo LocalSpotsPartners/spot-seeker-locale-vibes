@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { supabase } from '@/integrations/supabase/client';
 
 // Define the MapViewProps interface
 interface MapViewProps {
@@ -23,7 +24,32 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   });
   const [popupInfo, setPopupInfo] = useState<Place | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [mapboxToken, setMapboxToken] = useState<string | null>(null);
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
   const mapContainer = useRef<HTMLDivElement>(null);
+  
+  // Fetch Mapbox token from Supabase edge function
+  useEffect(() => {
+    const fetchMapboxToken = async () => {
+      try {
+        setIsLoadingToken(true);
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        if (error) {
+          console.error('Error fetching Mapbox token:', error);
+          setMapboxToken(null);
+        } else if (data && data.token) {
+          setMapboxToken(data.token);
+        }
+      } catch (err) {
+        console.error('Failed to fetch Mapbox token:', err);
+        setMapboxToken(null);
+      } finally {
+        setIsLoadingToken(false);
+      }
+    };
+    
+    fetchMapboxToken();
+  }, []);
   
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
@@ -36,17 +62,9 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   }, [places, selectedFeatures]);
   
   useEffect(() => {
-    if (!mapContainer.current) return;
-    if (map) return;
+    if (!mapContainer.current || !mapboxToken || map) return;
     
-    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
-    
-    if (!MAPBOX_TOKEN) {
-      console.error('Mapbox token is missing');
-      return;
-    }
-    
-    mapboxgl.accessToken = MAPBOX_TOKEN;
+    mapboxgl.accessToken = mapboxToken;
     
     let centerLat = 40.7128; // Default to NYC
     let centerLng = -74.006;
@@ -63,7 +81,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [centerLng, centerLat],
       zoom: 11.5,
-      accessToken: MAPBOX_TOKEN
+      accessToken: mapboxToken
     });
     
     newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
@@ -73,7 +91,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     return () => {
       newMap.remove();
     };
-  }, []);
+  }, [mapboxToken, filteredPlaces, map]);
   
   useEffect(() => {
     if (!map) return;
@@ -202,16 +220,20 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         </Button>
       </div>
     
-      {!import.meta.env.VITE_MAPBOX_TOKEN ? (
+      {isLoadingToken ? (
+        <div className="h-full flex items-center justify-center bg-gray-100">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-locale-500 border-r-transparent"></div>
+          <p className="ml-3 text-gray-600">Loading map...</p>
+        </div>
+      ) : !mapboxToken ? (
         <div className="h-full flex items-center justify-center bg-gray-100 flex-col">
           <div className="bg-white p-6 rounded-lg shadow-md max-w-md text-center">
             <h2 className="text-xl font-bold mb-4">Map View</h2>
             <p className="mb-4">
-              To see the map, you need to add your Mapbox token. Please get a token from 
-              <a href="https://mapbox.com" className="text-locale-500 hover:underline" target="_blank" rel="noreferrer"> Mapbox</a>.
+              Unable to load the map. Please make sure the Mapbox token is correctly configured in Supabase.
             </p>
             <div className="text-sm text-gray-500">
-              This is a placeholder until a Mapbox token is provided.
+              This is a placeholder until a valid Mapbox token is provided.
             </div>
             
             <div className="mt-6">
