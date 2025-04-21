@@ -5,6 +5,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface PlaceCardProps {
   place: Place;
@@ -46,14 +53,30 @@ export function PlaceCard({ place }: PlaceCardProps) {
   return (
     <Card className="transition hover:shadow-lg relative group">
       <Link to={`/place/${place.id}`} className="block">
-        {place.images?.[0] ? (
-          <img
-            src={place.images[0]}
-            alt={place.name}
-            className="h-40 w-full object-cover rounded-t"
-          />
+        {place.images && place.images.length > 0 ? (
+          <div className="relative h-40">
+            <Carousel className="w-full h-40">
+              <CarouselContent>
+                {place.images.map((image, index) => (
+                  <CarouselItem key={index}>
+                    <img
+                      src={image}
+                      alt={`${place.name} - Image ${index + 1}`}
+                      className="h-40 w-full object-cover"
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {place.images.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-2" />
+                  <CarouselNext className="right-2" />
+                </>
+              )}
+            </Carousel>
+          </div>
         ) : (
-          <div className="h-40 w-full bg-gray-200 flex items-center justify-center rounded-t">
+          <div className="h-40 w-full bg-gray-200 flex items-center justify-center">
             <span className="text-4xl text-gray-300">📍</span>
           </div>
         )}

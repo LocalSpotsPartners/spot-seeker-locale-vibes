@@ -13,7 +13,7 @@ export function HighlightedPlace({ place }: HighlightedPlaceProps) {
 
   return (
     <Card 
-      className="w-[280px] bg-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
+      className="w-[280px] bg-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow absolute top-4 left-4 z-[1000]"
       onClick={() => {
         console.log('Navigating to place details for:', place.name);
         navigate(`/place/${place.id}`);

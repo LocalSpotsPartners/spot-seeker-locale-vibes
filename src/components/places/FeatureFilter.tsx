@@ -3,6 +3,13 @@ import { useMemo } from "react";
 import { PlaceFeature } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Filter } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface FeatureFilterProps {
   onFilterChange: (features: PlaceFeature[]) => void;
@@ -29,11 +36,6 @@ export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilte
     }
   };
 
-  const selectedText = useMemo(() => {
-    if (!selectedFeatures || selectedFeatures.length === 0) return '';
-    return `Selected: ${selectedFeatures.join(', ')}`;
-  }, [selectedFeatures]);
-
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
@@ -41,26 +43,39 @@ export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilte
         <h3 className="font-medium">Filter by features</h3>
       </div>
       
-      {selectedText && (
-        <p className="text-sm text-gray-600 mb-2">{selectedText}</p>
-      )}
+      <Select
+        onValueChange={(value: PlaceFeature) => handleFeatureToggle(value)}
+      >
+        <SelectTrigger className="w-full mb-3">
+          <SelectValue placeholder="Select features..." />
+        </SelectTrigger>
+        <SelectContent>
+          {availableFeatures.map(feature => (
+            <SelectItem 
+              key={feature} 
+              value={feature}
+              className="cursor-pointer"
+            >
+              {feature.charAt(0).toUpperCase() + feature.slice(1)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       
-      <div className="flex flex-wrap gap-2 justify-start">
-        {availableFeatures.map(feature => (
-          <Badge 
-            key={feature}
-            variant="outline"
-            className={`cursor-pointer ${
-              selectedFeatures?.includes(feature) 
-                ? "bg-locale-100 text-locale-800 border-locale-800" 
-                : ""
-            }`}
-            onClick={() => handleFeatureToggle(feature)}
-          >
-            {feature.charAt(0).toUpperCase() + feature.slice(1)}
-          </Badge>
-        ))}
-      </div>
+      {selectedFeatures.length > 0 && (
+        <div className="flex flex-wrap gap-2 justify-start">
+          {selectedFeatures.map(feature => (
+            <Badge 
+              key={feature}
+              variant="outline"
+              className="cursor-pointer bg-locale-100 text-locale-800 border-locale-800"
+              onClick={() => handleFeatureToggle(feature)}
+            >
+              {feature.charAt(0).toUpperCase() + feature.slice(1)}
+            </Badge>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

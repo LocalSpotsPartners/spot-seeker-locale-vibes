@@ -1,6 +1,13 @@
 import { useCallback, useState } from "react";
 import { Place, Review } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,16 +73,35 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
-        <AspectRatio ratio={21/9}>
-          <img
-            src={place.images[0] || "/placeholder.svg"}
-            alt={place.name}
-            className="object-cover w-full h-full"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/placeholder.svg";
-            }}
-          />
-        </AspectRatio>
+        {place.images && place.images.length > 0 ? (
+          <div className="relative">
+            <Carousel>
+              <CarouselContent>
+                {place.images.map((image, index) => (
+                  <CarouselItem key={index}>
+                    <div className="aspect-[21/9]">
+                      <img
+                        src={image}
+                        alt={`${place.name} - Image ${index + 1}`}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              {place.images.length > 1 && (
+                <>
+                  <CarouselPrevious className="left-4" />
+                  <CarouselNext className="right-4" />
+                </>
+              )}
+            </Carousel>
+          </div>
+        ) : (
+          <div className="aspect-[21/9] bg-gray-200 flex items-center justify-center">
+            <span className="text-4xl text-gray-300">📍</span>
+          </div>
+        )}
         
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
