@@ -42,10 +42,13 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
     mapboxToken,
     onMapLoad: () => {
       if (map && filteredPlaces.length > 0) {
-        const placesWithCoordinates = filteredPlaces.filter(p => p.coordinates);
+        const placesWithCoordinates = filteredPlaces.filter(p => 
+          p.location && p.location.lat !== 0 && p.location.lng !== 0
+        );
+        
         if (placesWithCoordinates.length > 0) {
-          const sumLat = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[1] || 0), 0);
-          const sumLng = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[0] || 0), 0);
+          const sumLat = placesWithCoordinates.reduce((sum, place) => sum + place.location.lat, 0);
+          const sumLng = placesWithCoordinates.reduce((sum, place) => sum + place.location.lng, 0);
           const centerLat = sumLat / placesWithCoordinates.length;
           const centerLng = sumLng / placesWithCoordinates.length;
           map.setCenter([centerLng, centerLat]);
@@ -57,7 +60,10 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
   const markersRef = useMapMarkers({
     map,
     mapInitialized,
-    filteredPlaces,
+    filteredPlaces: filteredPlaces.map(place => ({
+      ...place, 
+      coordinates: place.location ? [place.location.lng, place.location.lat] as [number, number] : undefined
+    })),
     hoveredPlace,
     onMarkerClick: (clickedPlace) => {
       console.log('Marker clicked for place:', clickedPlace.name);
@@ -69,23 +75,22 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
   const { handleUserLocation } = useUserLocation(map, mapInitialized);
 
   // Handle viewport changes
-  if (map && mapInitialized) {
+  if (map && mapInitialized && onViewportChange) {
     map.on('moveend', () => {
-      if (onViewportChange) {
-        const bounds = map.getBounds();
-        onViewportChange({
-          north: bounds.getNorth(),
-          south: bounds.getSouth(),
-          east: bounds.getEast(),
-          west: bounds.getWest()
-        });
-      }
+      const bounds = map.getBounds();
+      onViewportChange({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest()
+      });
     });
   }
 
   // Handle popup
-  if (map && mapInitialized && popupInfo && popupInfo.coordinates) {
-    const popup = createMapPopup(popupInfo, map);
+  if (map && mapInitialized && popupInfo && popupInfo.location) {
+    const popupCoordinates: [number, number] = [popupInfo.location.lng, popupInfo.location.lat];
+    const popup = createMapPopup({...popupInfo, coordinates: popupCoordinates}, map);
     if (popup) {
       popup.on('close', () => setPopupInfo(null));
     }
@@ -103,7 +108,7 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
     <div className="h-full w-full bg-gray-100 relative" style={{ minHeight: '500px' }}>
       <MapControls 
         onLocationClick={handleUserLocation}
-        placesCount={filteredPlaces.filter(p => p.coordinates).length}
+        placesCount={filteredPlaces.filter(p => p.location && p.location.lat !== 0 && p.location.lng !== 0).length}
       />
       <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '500px' }} />
       {highlightedPlace && (

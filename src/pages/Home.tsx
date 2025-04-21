@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
@@ -9,6 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { MapView } from "@/components/map/MapView";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -17,6 +30,7 @@ export default function Home() {
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [mapBounds, setMapBounds] = useState<{
     north: number;
     south: number;
@@ -63,26 +77,51 @@ export default function Home() {
     loadPlaces();
   }, []);
 
-  const filteredPlaces = places.filter(place => {
-    // Feature filter
-    const matchesFeatures = selectedFeatures.length === 0 || 
-      selectedFeatures.every(feature => place.features.includes(feature));
+  // Compute suggestions for search
+  const searchSuggestions = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    
+    const locationSuggestions = Array.from(
+      new Set(
+        places
+          .map(p => p.location.address.split(',')[0]?.trim())
+          .filter(Boolean)
+      )
+    )
+    .filter(area => 
+      area.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .map(area => ({ type: 'location', value: area }));
+    
+    const nameSuggestions = places
+      .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+      .map(p => ({ type: 'name', value: p.name }));
+    
+    return [...locationSuggestions, ...nameSuggestions].slice(0, 5);
+  }, [places, searchQuery]);
 
-    // Search query filter
-    const matchesSearch = !searchQuery || 
-      place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      place.location.address.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredPlaces = useMemo(() => {
+    return places.filter(place => {
+      // Feature filter
+      const matchesFeatures = selectedFeatures.length === 0 || 
+        selectedFeatures.every(feature => place.features.includes(feature));
 
-    // Map bounds filter
-    const withinBounds = !mapBounds || (
-      place.location.lat <= mapBounds.north &&
-      place.location.lat >= mapBounds.south &&
-      place.location.lng <= mapBounds.east &&
-      place.location.lng >= mapBounds.west
-    );
+      // Search query filter
+      const matchesSearch = !searchQuery || 
+        place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        place.location.address.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return matchesFeatures && matchesSearch && withinBounds;
-  });
+      // Map bounds filter
+      const withinBounds = !mapBounds || (
+        place.location.lat <= mapBounds.north &&
+        place.location.lat >= mapBounds.south &&
+        place.location.lng <= mapBounds.east &&
+        place.location.lng >= mapBounds.west
+      );
+
+      return matchesFeatures && matchesSearch && withinBounds;
+    });
+  }, [places, selectedFeatures, searchQuery, mapBounds]);
 
   const handleMapViewportChange = (bounds: {
     north: number;
@@ -90,11 +129,17 @@ export default function Home() {
     east: number;
     west: number;
   }) => {
+    console.log("Map viewport changed:", bounds);
     setMapBounds(bounds);
   };
 
   const handlePlaceHover = (place: Place | null) => {
     setHoveredPlace(place);
+  };
+
+  const handleSearchSelection = (value: string) => {
+    setSearchQuery(value);
+    setSearchOpen(false);
   };
 
   return (
@@ -108,16 +153,54 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                type="text"
-                placeholder="Search by name or location..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9"
-              />
-            </div>
+            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+              <PopoverTrigger asChild>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search by name or location..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 md:text-base"
+                    onFocus={() => setSearchOpen(true)}
+                  />
+                </div>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-[300px]" align="start">
+                <Command>
+                  <CommandInput 
+                    placeholder="Search places..." 
+                    value={searchQuery}
+                    onValueChange={setSearchQuery}
+                  />
+                  <CommandList>
+                    <CommandEmpty>No results found.</CommandEmpty>
+                    {searchSuggestions.length > 0 && (
+                      <CommandGroup>
+                        {searchSuggestions.map((suggestion) => (
+                          <CommandItem
+                            key={`${suggestion.type}-${suggestion.value}`}
+                            onSelect={() => handleSearchSelection(suggestion.value)}
+                            className="flex items-center gap-2"
+                          >
+                            {suggestion.type === 'location' ? (
+                              <Map className="h-4 w-4 text-gray-400" />
+                            ) : (
+                              <Search className="h-4 w-4 text-gray-400" />
+                            )}
+                            <span>{suggestion.value}</span>
+                            <span className="text-xs text-gray-400 ml-auto">
+                              {suggestion.type === 'location' ? 'Area' : 'Place'}
+                            </span>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <Button
               variant="outline"
               className="flex items-center gap-2 md:hidden"

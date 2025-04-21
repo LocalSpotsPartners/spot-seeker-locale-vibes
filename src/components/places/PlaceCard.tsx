@@ -1,17 +1,16 @@
 
 import { Place } from "@/types";
-import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface PlaceCardProps {
   place: Place;
@@ -20,111 +19,79 @@ interface PlaceCardProps {
 }
 
 export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps) {
-  const [isWished, setIsWished] = useState(false);
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const stored = localStorage.getItem("wishList");
-    if (stored) {
-      const places = JSON.parse(stored) as Place[];
-      setIsWished(places.some((p) => p.id === place.id));
-    }
-  }, [place.id]);
-
-  const handleWish = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const stored = localStorage.getItem("wishList");
-    let places: Place[] = [];
-    if (stored) places = JSON.parse(stored) as Place[];
-
-    if (isWished) {
-      const updated = places.filter((p) => p.id !== place.id);
-      localStorage.setItem("wishList", JSON.stringify(updated));
-      setIsWished(false);
-    } else {
-      if (!places.some((p) => p.id === place.id)) {
-        localStorage.setItem("wishList", JSON.stringify([...places, place]));
-        setIsWished(true);
-      }
-    }
-  };
-
-  const handleCarouselClick = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleImageClick = (e: React.MouseEvent) => {
+    // Stop propagation to prevent card click from triggering
     e.stopPropagation();
   };
 
+  const handleCardClick = () => {
+    navigate(`/place/${place.id}`);
+  };
+
+  const placeFeaturesLimit = 3;
+  
   return (
     <Card 
-      className="transition hover:shadow-lg relative group"
+      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
+      onClick={handleCardClick}
     >
-      <Link to={`/place/${place.id}`} className="block">
-        {place.images && place.images.length > 0 ? (
-          <div className="relative h-40" onClick={handleCarouselClick}>
-            <Carousel className="w-full h-40">
-              <CarouselContent>
-                {place.images.map((image, index) => (
-                  <CarouselItem key={index}>
-                    <img
-                      src={image}
-                      alt={`${place.name} - Image ${index + 1}`}
-                      className="h-40 w-full object-cover"
-                    />
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              {place.images.length > 1 && (
-                <>
-                  <CarouselPrevious className="left-2" />
-                  <CarouselNext className="right-2" />
-                </>
-              )}
-            </Carousel>
-          </div>
-        ) : (
-          <div className="h-40 w-full bg-gray-200 flex items-center justify-center">
-            <span className="text-4xl text-gray-300">📍</span>
-          </div>
-        )}
-
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-lg">{place.name}</h2>
-            <button
-              onClick={handleWish}
-              title={isWished ? "Remove from Wish List" : "Add to Wish List"}
-              className="p-1 rounded-full hover:bg-locale-100 transition group"
-              aria-pressed={isWished}
-              aria-label="Toggle Wish List"
-            >
-              <Heart
-                size={20}
-                className={`transition ${isWished ? "fill-locale-500 text-locale-500" : "text-gray-300 group-hover:text-locale-500"}`}
+      <CardHeader className="p-0">
+        <div className="relative">
+          <AspectRatio ratio={16 / 9} className="bg-muted">
+            {place.images && place.images.length > 0 ? (
+              <img
+                src={place.images[0]}
+                alt={place.name}
+                className="object-cover w-full h-full"
+                onClick={handleImageClick}
               />
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-1 mb-2">
-            {place.features.slice(0, 3).map((feature) => (
-              <Badge key={feature} variant="outline">
-                {feature.charAt(0).toUpperCase() + feature.slice(1)}
-              </Badge>
-            ))}
-            {place.features.length > 3 && (
-              <Badge variant="outline" className="opacity-50">
-                +{place.features.length - 3}
-              </Badge>
+            ) : (
+              <div className="flex items-center justify-center h-full bg-gray-200">
+                <p className="text-gray-500">No image available</p>
+              </div>
             )}
+          </AspectRatio>
+          <div className="absolute top-2 right-2 bg-white rounded-md px-2 py-1 shadow flex items-center">
+            <Star className="h-4 w-4 text-yellow-400 fill-current mr-1" />
+            <span className="text-sm font-medium">{place.rating.toFixed(1)}</span>
           </div>
+        </div>
+      </CardHeader>
 
-          <div className="text-xs text-gray-500 mb-2">{place.location.address}</div>
-          <div>
-            <span className="mr-1 text-yellow-500">★</span>
-            <span className="font-medium">{place.rating.toFixed(1)}</span>
-          </div>
-        </CardContent>
-      </Link>
+      <CardContent className="p-4">
+        <h3 className="font-semibold mb-1 text-lg md:text-xl">{place.name}</h3>
+        <p className="text-gray-500 text-sm mb-3 md:text-base">{place.location.address}</p>
+        
+        <div className="flex flex-wrap gap-1">
+          {place.features.slice(0, placeFeaturesLimit).map((feature) => (
+            <Badge key={feature} variant="outline" className="capitalize">
+              {feature}
+            </Badge>
+          ))}
+          {place.features.length > placeFeaturesLimit && (
+            <Badge variant="outline" className="bg-gray-50">
+              +{place.features.length - placeFeaturesLimit}
+            </Badge>
+          )}
+        </div>
+      </CardContent>
+      
+      <CardFooter className="p-4 pt-0">
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/place/${place.id}`);
+          }}
+        >
+          View Details
+        </Button>
+      </CardFooter>
     </Card>
   );
 }

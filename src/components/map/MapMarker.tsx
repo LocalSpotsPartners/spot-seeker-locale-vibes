@@ -3,16 +3,20 @@ import { Place } from '@/types';
 import mapboxgl from 'mapbox-gl';
 
 interface MapMarkerProps {
-  place: Place & { coordinates: [number, number] };
+  place: Place & { coordinates?: [number, number] };
   map: mapboxgl.Map;
   onMarkerClick: (place: Place) => void;
   isHighlighted?: boolean;
 }
 
 export function createMapMarker({ place, map, onMarkerClick, isHighlighted = false }: MapMarkerProps) {
-  if (!place.coordinates || !map) {
+  const coordinates = place.coordinates || 
+    (place.location && [place.location.lng, place.location.lat] as [number, number]);
+  
+  if (!coordinates || !map) {
     console.error('Cannot create marker: missing coordinates or map', {
-      hasCoordinates: !!place.coordinates,
+      hasCoordinates: !!coordinates,
+      hasLocation: !!place.location,
       mapLoaded: !!map,
       placeName: place.name
     });
@@ -51,7 +55,7 @@ export function createMapMarker({ place, map, onMarkerClick, isHighlighted = fal
       element: el,
       anchor: 'bottom'
     })
-      .setLngLat(place.coordinates)
+      .setLngLat(coordinates)
       .addTo(map);
       
     return marker;

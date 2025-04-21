@@ -31,17 +31,22 @@ export const useMapMarkers = ({
     }
     
     console.log('Adding markers for', filteredPlaces.length, 'places');
-    console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
+    // Clean up existing markers
     markersRef.current.forEach(({marker}) => marker.remove());
     markersRef.current = [];
     
     filteredPlaces.forEach(place => {
-      if (place.coordinates) {
+      const coordinates = place.coordinates || 
+        (place.location && place.location.lng !== 0 && place.location.lat !== 0 
+          ? [place.location.lng, place.location.lat] as [number, number] 
+          : undefined);
+          
+      if (coordinates) {
         const isHighlighted = hoveredPlace && hoveredPlace.id === place.id;
         
         const marker = createMapMarker({
-          place: place as Place & { coordinates: [number, number] },
+          place: {...place, coordinates},
           map,
           onMarkerClick,
           isHighlighted
@@ -64,6 +69,7 @@ export const useMapMarkers = ({
     
     console.log('Created', markersRef.current.length, 'markers');
     
+    // Add styling for markers
     const style = document.createElement('style');
     style.textContent = `
       .place-marker {
