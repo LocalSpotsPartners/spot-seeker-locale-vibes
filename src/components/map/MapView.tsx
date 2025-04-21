@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
@@ -58,7 +59,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       newMap.on('load', () => {
         console.log('Map loaded successfully');
         setMapInitialized(true);
-        toast.success('Map loaded successfully');
       });
       
       newMap.on('error', (e) => {

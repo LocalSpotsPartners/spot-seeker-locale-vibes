@@ -46,7 +46,7 @@ export default function MapPage() {
             }
           }));
           setPlaces(transformedPlaces);
-          toast.success(`Loaded ${transformedPlaces.length} places`);
+          console.log('Places with coordinates:', transformedPlaces.filter(p => p.location.lat !== 0 && p.location.lng !== 0).length);
         }
       } catch (error) {
         console.error("Failed to load places:", error);
