@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Google, Apple } from "lucide-react";
+import { Facebook, Linkedin } from "lucide-react";
 
 export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
   const { signup, socialLogin } = useAuth();
@@ -58,7 +58,7 @@ export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
           className="w-full flex items-center justify-center gap-2"
           onClick={() => handleSocialLogin('google')}
         >
-          <Google size={18} />
+          <Facebook size={18} />
           <span>Continue with Google</span>
         </Button>
         <Button 
@@ -67,7 +67,7 @@ export function SignupForm({ onToggleForm }: { onToggleForm: () => void }) {
           className="w-full flex items-center justify-center gap-2"
           onClick={() => handleSocialLogin('apple')}
         >
-          <Apple size={18} />
+          <Linkedin size={18} />
           <span>Continue with Apple</span>
         </Button>
       </div>
