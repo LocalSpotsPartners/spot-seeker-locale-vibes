@@ -1,7 +1,5 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
-// Import directly from mapbox-gl instead of react-map-gl
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,14 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
-
-// We will need to get a Mapbox token, for now using a placeholder
-const MAPBOX_TOKEN = 'YOUR_MAPBOX_TOKEN'; // You'll need to input your token
-
-interface MapViewProps {
-  places: Place[];
-  selectedFeatures: PlaceFeature[];
-}
 
 export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [viewState, setViewState] = useState({
@@ -28,7 +18,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   
-  // Filter places based on selected features
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
       return places;
@@ -39,16 +28,19 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     );
   }, [places, selectedFeatures]);
   
-  // Initialize map
   useEffect(() => {
     if (!mapContainer.current) return;
     if (map) return;
     
-    if (MAPBOX_TOKEN === 'YOUR_MAPBOX_TOKEN') {
-      return; // Don't initialize map if no token
+    const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+    
+    if (!MAPBOX_TOKEN) {
+      console.error('Mapbox token is missing');
+      return;
     }
     
-    // Calculate center from places
+    mapboxgl.accessToken = MAPBOX_TOKEN;
+    
     let centerLat = 40.7128; // Default to NYC
     let centerLng = -74.006;
     
@@ -67,7 +59,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       accessToken: MAPBOX_TOKEN
     });
     
-    // Add navigation control
     newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
     
     setMap(newMap);
@@ -77,17 +68,13 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     };
   }, []);
   
-  // Update map markers when filtered places change
   useEffect(() => {
     if (!map) return;
     
-    // Remove existing markers
     const markers = document.querySelectorAll('.mapboxgl-marker');
     markers.forEach(marker => marker.remove());
     
-    // Add markers for filtered places
     filteredPlaces.forEach(place => {
-      // Create marker element
       const el = document.createElement('div');
       el.className = 'custom-marker';
       el.style.width = '24px';
@@ -104,36 +91,29 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
       el.innerText = place.rating.toFixed(1);
       
-      // Add click handler
       el.addEventListener('click', () => {
         setPopupInfo(place);
       });
       
-      // Add marker to map
       new mapboxgl.Marker(el)
         .setLngLat([place.location.lng, place.location.lat])
         .addTo(map);
     });
   }, [filteredPlaces, map]);
   
-  // Update popup when popupInfo changes
   useEffect(() => {
     if (!map) return;
     
-    // Remove existing popups
     const popups = document.querySelectorAll('.mapboxgl-popup');
     popups.forEach(popup => popup.remove());
     
     if (!popupInfo) return;
     
-    // Create popup content
     const popupNode = document.createElement('div');
     
-    // Create card content
     const card = document.createElement('div');
     card.className = 'bg-white p-3 rounded-md shadow-sm w-[260px]';
     
-    // Place name and rating
     const header = document.createElement('div');
     header.className = 'flex justify-between items-start mb-2';
     
@@ -153,12 +133,10 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     header.appendChild(title);
     header.appendChild(ratingContainer);
     
-    // Address
     const address = document.createElement('p');
     address.className = 'text-xs text-gray-500 mb-2';
     address.textContent = popupInfo.location.address;
     
-    // Features
     const features = document.createElement('div');
     features.className = 'flex flex-wrap gap-1 mb-2';
     
@@ -177,13 +155,11 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       features.appendChild(moreBadge);
     }
     
-    // View Details button
     const viewButton = document.createElement('a');
     viewButton.className = 'bg-locale-500 hover:bg-locale-600 text-white text-xs font-medium py-1 px-2 rounded block text-center w-full';
     viewButton.href = `/place/${popupInfo.id}`;
     viewButton.textContent = 'View Details';
     
-    // Assemble card
     card.appendChild(header);
     card.appendChild(address);
     card.appendChild(features);
@@ -191,7 +167,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     
     popupNode.appendChild(card);
     
-    // Create and add popup
     new mapboxgl.Popup({ offset: 25, closeButton: true })
       .setLngLat([popupInfo.location.lng, popupInfo.location.lat])
       .setDOMContent(popupNode)
@@ -220,7 +195,6 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         </Button>
       </div>
     
-      {/* For now, we're showing a placeholder. You'll need to add your Mapbox token */}
       {MAPBOX_TOKEN === 'YOUR_MAPBOX_TOKEN' ? (
         <div className="h-full flex items-center justify-center bg-gray-100 flex-col">
           <div className="bg-white p-6 rounded-lg shadow-md max-w-md text-center">
