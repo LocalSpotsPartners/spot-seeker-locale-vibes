@@ -19,9 +19,11 @@ interface MapViewProps {
 export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [popupInfo, setPopupInfo] = useState<Place | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
+  const [mapInitialized, setMapInitialized] = useState(false);
   const mapContainer = useRef<HTMLDivElement>(null);
-  const { mapboxToken, isLoadingToken } = useMapbox();
+  const { mapboxToken, isLoadingToken, error: mapboxError } = useMapbox();
   const { geocodedPlaces } = useGeocoding(places);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
   
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
@@ -33,74 +35,105 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     );
   }, [geocodedPlaces, selectedFeatures]);
   
+  // Initialize map when token is available
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken || map) return;
     
-    mapboxgl.accessToken = mapboxToken;
-    
-    let centerLat = 40.7128; // Default to NYC
-    let centerLng = -74.006;
+    try {
+      console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
+      mapboxgl.accessToken = mapboxToken;
+      
+      const newMap = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [-74.006, 40.7128], // Default to NYC
+        zoom: 11.5
+      });
+      
+      newMap.on('load', () => {
+        console.log('Map loaded successfully');
+        setMapInitialized(true);
+      });
+      
+      newMap.on('error', (e) => {
+        console.error('Map error:', e);
+      });
+      
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      
+      setMap(newMap);
+      
+      return () => {
+        console.log('Cleaning up map');
+        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current = [];
+        newMap.remove();
+      };
+    } catch (err) {
+      console.error('Error initializing map:', err);
+    }
+  }, [mapboxToken, map]);
+  
+  // Set map center based on filtered places
+  useEffect(() => {
+    if (!map || !mapInitialized || filteredPlaces.length === 0) return;
     
     const placesWithCoordinates = filteredPlaces.filter(p => p.coordinates);
     
     if (placesWithCoordinates.length > 0) {
       const sumLat = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[1] || 0), 0);
       const sumLng = placesWithCoordinates.reduce((sum, place) => sum + (place.coordinates?.[0] || 0), 0);
-      centerLat = sumLat / placesWithCoordinates.length;
-      centerLng = sumLng / placesWithCoordinates.length;
+      const centerLat = sumLat / placesWithCoordinates.length;
+      const centerLng = sumLng / placesWithCoordinates.length;
+      
+      map.setCenter([centerLng, centerLat]);
     }
-    
-    const newMap = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center: [centerLng, centerLat],
-      zoom: 11.5,
-      accessToken: mapboxToken
-    });
-    
-    newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    
-    setMap(newMap);
-    
-    return () => {
-      newMap.remove();
-    };
-  }, [mapboxToken, filteredPlaces, map]);
+  }, [map, mapInitialized, filteredPlaces]);
   
+  // Add markers for filtered places
   useEffect(() => {
-    if (!map) return;
+    if (!map || !mapInitialized) return;
+    
+    console.log('Adding markers for', filteredPlaces.length, 'places');
     
     // Remove existing markers
-    const markers = document.querySelectorAll('.mapboxgl-marker');
-    markers.forEach(marker => marker.remove());
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
     
     // Add markers for places with coordinates
     filteredPlaces.forEach(place => {
-      createMapMarker({
-        place,
-        map,
-        onMarkerClick: setPopupInfo
-      });
+      if (place.coordinates) {
+        const marker = createMapMarker({
+          place,
+          map,
+          onMarkerClick: setPopupInfo
+        });
+        
+        if (marker) {
+          markersRef.current.push(marker);
+        }
+      }
     });
-  }, [filteredPlaces, map]);
+  }, [filteredPlaces, map, mapInitialized]);
   
+  // Handle popup display
   useEffect(() => {
-    if (!map) return;
+    if (!map || !mapInitialized) return;
     
     const popups = document.querySelectorAll('.mapboxgl-popup');
     popups.forEach(popup => popup.remove());
     
-    if (!popupInfo) return;
+    if (!popupInfo || !popupInfo.coordinates) return;
     
     const popup = createMapPopup(popupInfo, map);
     popup.on('close', () => setPopupInfo(null));
-  }, [popupInfo, map]);
+  }, [popupInfo, map, mapInitialized]);
 
   if (isLoadingToken) {
     return <MapLoading />;
   }
 
-  if (!mapboxToken) {
+  if (mapboxError || !mapboxToken) {
     return <MapError places={places} />;
   }
 
