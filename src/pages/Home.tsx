@@ -195,18 +195,28 @@ export default function Home() {
                       setTimeout(() => setSearchOpen(false), 100);
                     }}
                   >
-                    <Command shouldFilter={false} loop={false}>
+                    <Command loop={false} shouldFilter={false} className="remove-auto-focus">
+                      <style jsx global>{`
+                        .remove-auto-focus [cmdk-item][data-selected] {
+                          background: transparent;
+                          color: inherit;
+                        }
+                        .remove-auto-focus [cmdk-item]:hover {
+                          background: var(--accent);
+                          color: var(--accent-foreground);
+                        }
+                      `}</style>
                       <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
                           {searchSuggestions.map(suggestion => (
                             <CommandItem 
                               key={`${suggestion.type}-${suggestion.value}`} 
-                              onSelect={(value) => {
+                              onSelect={() => {
                                 handleSearchSelection(suggestion.value);
                                 setTimeout(focusSearchInput, 100);
                               }} 
-                              className="flex items-center gap-2 cursor-pointer"
+                              className="flex items-center gap-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
                               value={suggestion.value}
                             >
                               {suggestion.type === 'neighborhood' ? 
