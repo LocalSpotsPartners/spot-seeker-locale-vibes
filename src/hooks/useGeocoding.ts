@@ -4,7 +4,7 @@ import { Place } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useGeocoding = (places: Place[]) => {
-  const [geocodedPlaces, setGeocodedPlaces] = useState<(Place & { coordinates?: [number, number] })[]>([]);
+  const [geocodedPlaces, setGeocodedPlaces] = useState<Place[]>([]);
   
   useEffect(() => {
     const geocodePlaces = async () => {
@@ -14,7 +14,7 @@ export const useGeocoding = (places: Place[]) => {
             if (place.location.lng !== 0 && place.location.lat !== 0) {
               return {
                 ...place,
-                coordinates: [place.location.lng, place.location.lat]
+                coordinates: [place.location.lng, place.location.lat] as [number, number]
               };
             }
             
@@ -27,10 +27,10 @@ export const useGeocoding = (places: Place[]) => {
               return place;
             }
             
-            if (data.geocoding) {
+            if (data?.geocoding) {
               return {
                 ...place,
-                coordinates: data.geocoding
+                coordinates: data.geocoding as [number, number]
               };
             }
             

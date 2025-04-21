@@ -3,6 +3,11 @@ import { Place } from '@/types';
 import mapboxgl from 'mapbox-gl';
 
 export function createMapPopup(place: Place, map: mapboxgl.Map) {
+  if (!place.coordinates) {
+    console.error('Cannot create popup: missing coordinates for place', place.name);
+    return null;
+  }
+
   const popupNode = document.createElement('div');
   
   const card = document.createElement('div');
@@ -62,7 +67,7 @@ export function createMapPopup(place: Place, map: mapboxgl.Map) {
   popupNode.appendChild(card);
   
   return new mapboxgl.Popup({ offset: 25, closeButton: true })
-    .setLngLat([place.location.lng, place.location.lat])
+    .setLngLat(place.coordinates)
     .setDOMContent(popupNode)
     .addTo(map);
 }

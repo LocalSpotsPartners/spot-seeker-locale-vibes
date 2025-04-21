@@ -3,7 +3,7 @@ import { Place } from '@/types';
 import mapboxgl from 'mapbox-gl';
 
 interface MapMarkerProps {
-  place: Place & { coordinates?: [number, number] };
+  place: Place & { coordinates: [number, number] };
   map: mapboxgl.Map;
   onMarkerClick: (place: Place) => void;
 }

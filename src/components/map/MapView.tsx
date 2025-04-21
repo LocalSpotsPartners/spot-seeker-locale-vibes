@@ -104,7 +104,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     filteredPlaces.forEach(place => {
       if (place.coordinates) {
         const marker = createMapMarker({
-          place,
+          place: place as Place & { coordinates: [number, number] },
           map,
           onMarkerClick: setPopupInfo
         });

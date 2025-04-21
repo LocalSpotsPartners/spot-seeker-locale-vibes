@@ -32,6 +32,7 @@ export type Place = {
   features: PlaceFeature[];
   location: Location;
   rating: number;
+  coordinates?: [number, number]; // Added optional coordinates property
 };
 
 export type Review = {
