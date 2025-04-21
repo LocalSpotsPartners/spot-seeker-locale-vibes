@@ -52,6 +52,19 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+        locale: {
+          50: '#eafbff',
+          100: '#d0f4fe',
+          200: '#aaebfd',
+          300: '#72dffa',
+          400: '#33c8f3',
+          500: '#14ade0',
+          600: '#0c8abe',
+          700: '#0f6c98',
+          800: '#145a7c',
+          900: '#164b68',
+          950: '#083145',
+        },
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
