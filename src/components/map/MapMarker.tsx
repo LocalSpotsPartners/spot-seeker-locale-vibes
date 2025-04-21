@@ -38,18 +38,23 @@ export function createMapMarker({ place, map, onMarkerClick, isHighlighted = fal
       el.style.transform = 'scale(1.2)';
     }
     
+    // Add data attribute for easier selection
+    el.setAttribute('data-place-id', place.id);
+    
     el.addEventListener('click', (e) => {
       e.stopPropagation(); // Prevent map click event
       console.log('Marker clicked for:', place.name);
       onMarkerClick(place);
     });
     
-    return new mapboxgl.Marker({
+    const marker = new mapboxgl.Marker({
       element: el,
       anchor: 'bottom'
     })
       .setLngLat(place.coordinates)
       .addTo(map);
+      
+    return marker;
   } catch (error) {
     console.error('Error creating map marker:', error);
     return null;

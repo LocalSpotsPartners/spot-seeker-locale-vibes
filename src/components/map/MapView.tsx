@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Place, PlaceFeature } from '@/types';
@@ -11,7 +10,7 @@ import { createMapMarker } from './MapMarker';
 import { createMapPopup } from './MapPopup';
 import { HighlightedPlace } from './HighlightedPlace';
 import { MapPin } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MapViewProps {
@@ -106,7 +105,6 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
     }
   }, [map, mapInitialized, filteredPlaces]);
   
-  // Add or update user location marker
   useEffect(() => {
     if (!map || !mapInitialized || !userLocation) return;
     
@@ -132,33 +130,41 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
     }
   }, [map, mapInitialized, userLocation]);
   
-  // Effect for handling the hovered place
   useEffect(() => {
-    if (!map || !mapInitialized || !hoveredPlace) return;
+    if (!map || !mapInitialized) return;
     
-    // Find the marker for the hovered place
-    const markerObj = markersRef.current.find(m => m.place.id === hoveredPlace.id);
-    if (markerObj) {
-      // Highlight the marker
-      const markerEl = markerObj.marker.getElement();
-      markerEl.classList.add('hovered-marker');
+    markersRef.current.forEach(({marker, place}) => {
+      const el = marker.getElement();
+      el.classList.remove('hovered-marker');
       
-      // Center the map on the hovered place if it has coordinates
-      if (hoveredPlace.coordinates) {
+      const svg = el.querySelector('svg');
+      if (svg) {
+        svg.setAttribute('fill', '#EA4335');
+      }
+    });
+    
+    if (hoveredPlace) {
+      console.log(`Highlighting marker for ${hoveredPlace.name}`);
+      
+      const markerObj = markersRef.current.find(m => m.place.id === hoveredPlace.id);
+      if (markerObj) {
+        const el = markerObj.marker.getElement();
+        el.classList.add('hovered-marker');
+        
+        const svg = el.querySelector('svg');
+        if (svg) {
+          svg.setAttribute('fill', '#4285F4');
+        }
+        
         map.easeTo({
           center: hoveredPlace.coordinates,
           duration: 800
         });
+        
+        setHighlightedPlace(hoveredPlace);
       }
-      
-      setHighlightedPlace(hoveredPlace);
-      
-      return () => {
-        markerEl.classList.remove('hovered-marker');
-        if (!hoveredPlace) {
-          setHighlightedPlace(null);
-        }
-      };
+    } else {
+      setHighlightedPlace(null);
     }
   }, [map, mapInitialized, hoveredPlace]);
   
@@ -179,23 +185,24 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
     
     filteredPlaces.forEach(place => {
       if (place.coordinates) {
+        const isHighlighted = hoveredPlace && hoveredPlace.id === place.id;
+        
         const marker = createMapMarker({
           place: place as Place & { coordinates: [number, number] },
           map,
           onMarkerClick: (clickedPlace) => {
             console.log('Marker clicked for place:', clickedPlace.name);
-            setPopupInfo(null); // Close any existing popup
-            setHighlightedPlace(clickedPlace); // Show the highlighted place widget
-          }
+            setPopupInfo(null);
+            setHighlightedPlace(clickedPlace);
+          },
+          isHighlighted: isHighlighted
         });
         
         if (marker) {
-          // Add CSS class for styling
           const el = marker.getElement();
           el.classList.add('place-marker');
           
-          // Add hover effect
-          if (hoveredPlace && hoveredPlace.id === place.id) {
+          if (isHighlighted) {
             el.classList.add('hovered-marker');
           }
           
@@ -208,7 +215,6 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
     
     console.log('Created', markersRef.current.length, 'markers');
     
-    // Add CSS for marker highlighting
     const style = document.createElement('style');
     style.textContent = `
       .place-marker {
@@ -240,7 +246,6 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
     }
   }, [popupInfo, map, mapInitialized]);
 
-  // Handle user location
   const handleUserLocation = () => {
     navigator.geolocation.getCurrentPosition(
       position => {

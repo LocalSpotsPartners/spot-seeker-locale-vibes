@@ -1,5 +1,5 @@
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Place, Review } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -29,12 +29,15 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
   const [activeTab, setActiveTab] = useState("info");
   const [localReviews, setLocalReviews] = useState<Review[]>(initialReviews);
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleAddReview = useCallback(async (review: Omit<Review, "id" | "userId" | "userName" | "userAvatar" | "date">) => {
     if (!user) {
       toast.error("You must be logged in to submit a review");
       return;
     }
+    
+    setIsSubmitting(true);
     
     const newReview = {
       place_id: place.id,
@@ -46,12 +49,19 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
     };
     
     try {
+      console.log("Submitting review to Supabase:", newReview);
+      
       const { data, error } = await supabase
         .from('reviews')
         .insert(newReview)
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
+      
+      console.log("Supabase response:", data);
       
       if (data && data.length > 0) {
         // Transform the response into a Review object
@@ -66,14 +76,20 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
           date: data[0].created_at || new Date().toISOString()
         };
         
+        console.log("Transformed review:", addedReview);
+        
         // Add the new review to the beginning of localReviews
         setLocalReviews(prev => [addedReview, ...prev]);
         setShowForm(false);
         toast.success("Review submitted successfully");
+      } else {
+        toast.error("No data returned from Supabase");
       }
     } catch (error) {
       console.error("Failed to add review:", error);
       toast.error(error instanceof Error ? error.message : "Failed to add review");
+    } finally {
+      setIsSubmitting(false);
     }
   }, [user, place.id]);
   
@@ -160,6 +176,7 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
                         placeId={place.id}
                         onAddReview={handleAddReview}
                         onCancel={() => setShowForm(false)}
+                        isSubmitting={isSubmitting}
                       />
                     )}
                   </div>

@@ -55,6 +55,12 @@ export default function Home() {
     loadPlaces();
   }, []);
 
+  // Update the onHover handler to pass to both the grid and map
+  const handlePlaceHover = (place: Place | null) => {
+    console.log('Hovering place:', place?.name || 'none');
+    setHoveredPlace(place);
+  };
+
   return (
     <Layout>
       <div className="container py-8 pb-20 md:py-8">
@@ -92,7 +98,7 @@ export default function Home() {
               <PlaceGrid 
                 places={places} 
                 selectedFeatures={selectedFeatures} 
-                onPlaceHover={setHoveredPlace}
+                onPlaceHover={handlePlaceHover}
               />
             </div>
             <div className={`${!showMobileMap ? 'hidden md:block' : ''} md:sticky md:top-24 h-[calc(100vh-8rem)]`}>
