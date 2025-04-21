@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import mapboxgl from 'mapbox-gl';
@@ -7,6 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+// Define the MapViewProps interface
+interface MapViewProps {
+  places: Place[];
+  selectedFeatures: PlaceFeature[];
+}
 
 export function MapView({ places, selectedFeatures }: MapViewProps) {
   const [viewState, setViewState] = useState({
@@ -195,7 +202,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         </Button>
       </div>
     
-      {MAPBOX_TOKEN === 'YOUR_MAPBOX_TOKEN' ? (
+      {!import.meta.env.VITE_MAPBOX_TOKEN ? (
         <div className="h-full flex items-center justify-center bg-gray-100 flex-col">
           <div className="bg-white p-6 rounded-lg shadow-md max-w-md text-center">
             <h2 className="text-xl font-bold mb-4">Map View</h2>
