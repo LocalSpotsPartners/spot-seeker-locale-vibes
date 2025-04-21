@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Chrome } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
 export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
@@ -23,6 +22,7 @@ export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
     
     try {
       await login(email, password);
+      toast.success("Successfully logged in!");
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to login");
     } finally {

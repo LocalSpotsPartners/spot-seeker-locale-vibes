@@ -38,9 +38,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
+    setIsLoading(true);
+    
+    // Listen for auth changes
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session);
+      if (session) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          avatar: session.user.user_metadata.avatar_url,
+        });
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setIsLoading(false);
+    });
+
     // Initial check for existing session
     const checkSession = async () => {
-      setIsLoading(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         console.log("Initial session check:", session);
@@ -60,24 +79,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
       }
     };
-
-    // Listen for auth changes
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session);
-      if (session) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          avatar: session.user.user_metadata.avatar_url,
-        });
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-      setIsLoading(false);
-    });
 
     checkSession();
 
@@ -103,6 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const socialLogin = async (provider: 'google' | 'apple') => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: provider,
+      options: {
+        redirectTo: `${window.location.origin}/login`,
+      }
     });
     if (error) throw error;
   };
