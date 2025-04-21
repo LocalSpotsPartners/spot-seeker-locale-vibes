@@ -3,12 +3,24 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
+// Updated type to include new properties
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
+  isLoading: boolean;  // Added isLoading
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   signup: (email: string, password: string) => Promise<void>;
+  // Added new properties for subscription and social login
+  socialLogin: (provider: 'google' | 'apple') => Promise<void>;
+  subscription: {
+    isPremium: boolean;
+    isTrialActive: boolean;
+    trialEndDate?: string;
+  };
+  activateTrial: () => Promise<void>;
+  upgradeToPremium: () => Promise<void>;
+  cancelPremium: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,10 +28,19 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);  // Added loading state
+
+  // Initialize with default subscription state
+  const [subscription, setSubscription] = useState({
+    isPremium: false,
+    isTrialActive: false,
+    trialEndDate: undefined
+  });
 
   useEffect(() => {
     // Initial check for existing session
     const checkSession = async () => {
+      setIsLoading(true);
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUser({
@@ -29,10 +50,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         });
         setIsAuthenticated(true);
       }
+      setIsLoading(false);
     };
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         setUser({
           id: session.user.id,
@@ -50,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Cleanup subscription
     return () => {
-      subscription.unsubscribe();
+      authSubscription.unsubscribe();
     };
   }, []);
 
@@ -60,7 +82,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signup = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ 
+      email, 
+      password 
+    });
+    if (error) throw error;
+  };
+
+  const socialLogin = async (provider: 'google' | 'apple') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: provider,
+    });
     if (error) throw error;
   };
 
@@ -68,8 +100,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  // Placeholder implementations for subscription methods
+  const activateTrial = async () => {
+    // TODO: Implement actual trial activation logic
+    setSubscription(prev => ({
+      ...prev,
+      isTrialActive: true,
+      trialEndDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }));
+  };
+
+  const upgradeToPremium = async () => {
+    // TODO: Implement actual premium upgrade logic
+    setSubscription(prev => ({
+      ...prev,
+      isPremium: true,
+      isTrialActive: false
+    }));
+  };
+
+  const cancelPremium = async () => {
+    // TODO: Implement actual premium cancellation logic
+    setSubscription(prev => ({
+      ...prev,
+      isPremium: false
+    }));
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, signup }}>
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        isAuthenticated, 
+        isLoading,
+        login, 
+        logout, 
+        signup,
+        socialLogin,
+        subscription,
+        activateTrial,
+        upgradeToPremium,
+        cancelPremium
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
