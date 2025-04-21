@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Facebook, Linkedin } from "lucide-react";
+import { Chrome } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
@@ -29,12 +29,12 @@ export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+  const handleGoogleLogin = async () => {
     setError(null);
     try {
-      await socialLogin(provider);
+      await socialLogin('google');
     } catch (error) {
-      setError(error instanceof Error ? error.message : `Failed to login with ${provider}`);
+      setError(error instanceof Error ? error.message : "Failed to login with Google");
     }
   };
 
@@ -51,24 +51,15 @@ export function LoginForm({ onToggleForm }: { onToggleForm: () => void }) {
         </Alert>
       )}
       
-      <div className="flex flex-col gap-4">
+      <div>
         <Button 
           variant="outline" 
           type="button" 
           className="w-full flex items-center justify-center gap-2"
-          onClick={() => handleSocialLogin('google')}
+          onClick={handleGoogleLogin}
         >
-          <Facebook size={18} />
+          <Chrome className="h-5 w-5" />
           <span>Continue with Google</span>
-        </Button>
-        <Button 
-          variant="outline" 
-          type="button" 
-          className="w-full flex items-center justify-center gap-2"
-          onClick={() => handleSocialLogin('apple')}
-        >
-          <Linkedin size={18} />
-          <span>Continue with Apple</span>
         </Button>
       </div>
       

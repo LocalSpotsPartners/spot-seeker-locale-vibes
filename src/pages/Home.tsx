@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -12,7 +13,7 @@ export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showMap, setShowMap] = useState(false);
+  const [showMobileMap, setShowMobileMap] = useState(false);
 
   useEffect(() => {
     const loadPlaces = async () => {
@@ -55,7 +56,7 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="container py-8 pb-20">
+      <div className="container py-8 pb-20 md:py-8">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-3xl font-bold mb-2">Discover Local Spots</h1>
@@ -65,12 +66,12 @@ export default function Home() {
           </div>
           <Button
             variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => setShowMap((v) => !v)}
+            className="flex items-center gap-2 md:hidden"
+            onClick={() => setShowMobileMap((v) => !v)}
             aria-label="Toggle Map View"
           >
             <Map className="w-4 h-4" />
-            {showMap ? "Show List" : "Show Map"}
+            {showMobileMap ? "Show List" : "Show Map"}
           </Button>
         </div>
 
@@ -84,12 +85,15 @@ export default function Home() {
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-locale-500 border-r-transparent"></div>
             <p className="mt-4 text-gray-600">Loading places...</p>
           </div>
-        ) : showMap ? (
-          <div className="pt-6">
-            <MapView places={places} selectedFeatures={selectedFeatures} />
-          </div>
         ) : (
-          <PlaceGrid places={places} selectedFeatures={selectedFeatures} />
+          <div className="md:grid md:grid-cols-2 md:gap-6 lg:gap-8">
+            <div className={`${showMobileMap ? 'hidden md:block' : ''}`}>
+              <PlaceGrid places={places} selectedFeatures={selectedFeatures} />
+            </div>
+            <div className={`${!showMobileMap ? 'hidden md:block' : ''} md:sticky md:top-24 h-[calc(100vh-8rem)]`}>
+              <MapView places={places} selectedFeatures={selectedFeatures} />
+            </div>
+          </div>
         )}
       </div>
     </Layout>

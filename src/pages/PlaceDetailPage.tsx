@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Place, Review, PlaceFeature } from "@/types";
+import { MapView } from "@/components/map/MapView";
 
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -122,7 +123,16 @@ export default function PlaceDetailPage() {
           <span>Back</span>
         </Button>
         
-        <PlaceDetail place={place} reviews={reviews} />
+        <div className="space-y-8">
+          <PlaceDetail place={place} reviews={reviews} />
+          
+          <div className="h-[400px] rounded-lg overflow-hidden shadow-lg">
+            <MapView 
+              places={[place]} 
+              selectedFeatures={[]} 
+            />
+          </div>
+        </div>
       </div>
     </Layout>
   );
