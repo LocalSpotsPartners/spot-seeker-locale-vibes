@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -64,7 +63,6 @@ export default function Home() {
     loadPlaces();
   }, []);
 
-  // Compute suggestions for search
   const searchSuggestions = useMemo(() => {
     if (!searchQuery.trim()) return [];
     
@@ -189,7 +187,7 @@ export default function Home() {
                       setTimeout(() => setSearchOpen(false), 100);
                     }}
                   >
-                    <Command>
+                    <Command shouldFilter={false}>
                       <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
@@ -198,6 +196,7 @@ export default function Home() {
                               key={`${suggestion.type}-${suggestion.value}`} 
                               onSelect={() => handleSearchSelection(suggestion.value)} 
                               className="flex items-center gap-2 cursor-pointer"
+                              data-disabled-auto-select
                             >
                               {suggestion.type === 'neighborhood' ? 
                                 <Map className="h-4 w-4 text-gray-400" /> : 
