@@ -17,9 +17,15 @@ interface MapViewProps {
   places: Place[];
   selectedFeatures: PlaceFeature[];
   hoveredPlace?: Place | null;
+  onViewportChange?: (bounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }) => void;
 }
 
-export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps) {
+export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChange }: MapViewProps) {
   const [popupInfo, setPopupInfo] = useState<Place | null>(null);
   const [highlightedPlace, setHighlightedPlace] = useState<Place | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
@@ -106,7 +112,7 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
   }, [map, mapInitialized, filteredPlaces]);
   
   useEffect(() => {
-    if (!map || !mapInitialized || !userLocation) return;
+    if (!map || !mapInitialized || userLocation) return;
     
     if (userLocationMarker) {
       userLocationMarker.setLngLat(userLocation);
@@ -270,6 +276,28 @@ export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps
       }
     );
   };
+
+  useEffect(() => {
+    if (!map || !mapInitialized) return;
+    
+    const handleMoveEnd = () => {
+      if (map && onViewportChange) {
+        const bounds = map.getBounds();
+        onViewportChange({
+          north: bounds.getNorth(),
+          south: bounds.getSouth(),
+          east: bounds.getEast(),
+          west: bounds.getWest()
+        });
+      }
+    };
+    
+    map.on('moveend', handleMoveEnd);
+    
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [map, mapInitialized, onViewportChange]);
 
   if (isLoadingToken) {
     return <MapLoading />;

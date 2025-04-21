@@ -22,7 +22,6 @@ interface PlaceCardProps {
 export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps) {
   const [isWished, setIsWished] = useState(false);
 
-  // Check wish list status on mount
   useEffect(() => {
     const stored = localStorage.getItem("wishList");
     if (stored) {
@@ -31,25 +30,27 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
     }
   }, [place.id]);
 
-  // Toggle wish list
   const handleWish = (e: React.MouseEvent) => {
-    e.preventDefault(); // prevent navigating to details
+    e.preventDefault();
     const stored = localStorage.getItem("wishList");
     let places: Place[] = [];
     if (stored) places = JSON.parse(stored) as Place[];
 
     if (isWished) {
-      // Remove from wish list
       const updated = places.filter((p) => p.id !== place.id);
       localStorage.setItem("wishList", JSON.stringify(updated));
       setIsWished(false);
     } else {
-      // Add to wish list
       if (!places.some((p) => p.id === place.id)) {
         localStorage.setItem("wishList", JSON.stringify([...places, place]));
         setIsWished(true);
       }
     }
+  };
+
+  const handleCarouselClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
   };
 
   return (
@@ -60,7 +61,7 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
     >
       <Link to={`/place/${place.id}`} className="block">
         {place.images && place.images.length > 0 ? (
-          <div className="relative h-40">
+          <div className="relative h-40" onClick={handleCarouselClick}>
             <Carousel className="w-full h-40">
               <CarouselContent>
                 {place.images.map((image, index) => (

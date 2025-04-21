@@ -4,8 +4,9 @@ import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
 import { PlaceFeature, Place } from "@/types";
-import { Map } from "lucide-react";
+import { Map, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { MapView } from "@/components/map/MapView";
 
@@ -15,6 +16,13 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [mapBounds, setMapBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
 
   useEffect(() => {
     const loadPlaces = async () => {
@@ -55,9 +63,37 @@ export default function Home() {
     loadPlaces();
   }, []);
 
-  // Update the onHover handler to pass to both the grid and map
+  const filteredPlaces = places.filter(place => {
+    // Feature filter
+    const matchesFeatures = selectedFeatures.length === 0 || 
+      selectedFeatures.every(feature => place.features.includes(feature));
+
+    // Search query filter
+    const matchesSearch = !searchQuery || 
+      place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      place.location.address.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Map bounds filter
+    const withinBounds = !mapBounds || (
+      place.location.lat <= mapBounds.north &&
+      place.location.lat >= mapBounds.south &&
+      place.location.lng <= mapBounds.east &&
+      place.location.lng >= mapBounds.west
+    );
+
+    return matchesFeatures && matchesSearch && withinBounds;
+  });
+
+  const handleMapViewportChange = (bounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }) => {
+    setMapBounds(bounds);
+  };
+
   const handlePlaceHover = (place: Place | null) => {
-    console.log('Hovering place:', place?.name || 'none');
     setHoveredPlace(place);
   };
 
@@ -71,15 +107,27 @@ export default function Home() {
               Explore our curated collection of local gems and hidden favorites
             </p>
           </div>
-          <Button
-            variant="outline"
-            className="flex items-center gap-2 md:hidden"
-            onClick={() => setShowMobileMap((v) => !v)}
-            aria-label="Toggle Map View"
-          >
-            <Map className="w-4 h-4" />
-            {showMobileMap ? "Show List" : "Show Map"}
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search by name or location..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="flex items-center gap-2 md:hidden"
+              onClick={() => setShowMobileMap((v) => !v)}
+              aria-label="Toggle Map View"
+            >
+              <Map className="w-4 h-4" />
+              {showMobileMap ? "Show List" : "Show Map"}
+            </Button>
+          </div>
         </div>
 
         <FeatureFilter 
@@ -96,8 +144,8 @@ export default function Home() {
           <div className="md:grid md:grid-cols-2 md:gap-6 lg:gap-8">
             <div className={`${showMobileMap ? 'hidden md:block' : ''}`}>
               <PlaceGrid 
-                places={places} 
-                selectedFeatures={selectedFeatures} 
+                places={filteredPlaces} 
+                selectedFeatures={selectedFeatures}
                 onPlaceHover={handlePlaceHover}
               />
             </div>
@@ -105,7 +153,8 @@ export default function Home() {
               <MapView 
                 places={places} 
                 selectedFeatures={selectedFeatures}
-                hoveredPlace={hoveredPlace} 
+                hoveredPlace={hoveredPlace}
+                onViewportChange={handleMapViewportChange}
               />
             </div>
           </div>
