@@ -30,7 +30,9 @@ export function createMapMarker({ place, map, onMarkerClick }: MapMarkerProps) {
     el.style.width = '32px';
     el.style.height = '32px';
     
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent map click event
+      console.log('Marker clicked for:', place.name);
       onMarkerClick(place);
     });
     

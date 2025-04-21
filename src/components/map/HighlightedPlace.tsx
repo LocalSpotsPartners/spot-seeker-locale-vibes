@@ -14,7 +14,10 @@ export function HighlightedPlace({ place }: HighlightedPlaceProps) {
   return (
     <Card 
       className="w-[280px] bg-white shadow-lg cursor-pointer hover:shadow-xl transition-shadow"
-      onClick={() => navigate(`/place/${place.id}`)}
+      onClick={() => {
+        console.log('Navigating to place details for:', place.name);
+        navigate(`/place/${place.id}`);
+      }}
     >
       <div className="p-4">
         <div className="flex justify-between items-start mb-2">

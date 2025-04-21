@@ -35,7 +35,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
     
     return geocodedPlaces.filter((place) => 
-      selectedFeatures.some(feature => place.features.includes(feature))
+      selectedFeatures.every(feature => place.features.includes(feature))
     );
   }, [geocodedPlaces, selectedFeatures]);
 
@@ -122,7 +122,11 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         const marker = createMapMarker({
           place: place as Place & { coordinates: [number, number] },
           map,
-          onMarkerClick: setPopupInfo
+          onMarkerClick: (clickedPlace) => {
+            console.log('Marker clicked for place:', clickedPlace.name);
+            setPopupInfo(null); // Close any existing popup
+            setHighlightedPlace(clickedPlace); // Show the highlighted place widget
+          }
         });
         
         if (marker) {
@@ -160,7 +164,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
 
   return (
     <div className="h-full w-full bg-gray-100 relative" style={{ minHeight: '500px' }}>
-      <div className="absolute bottom-20 right-4 z-10 flex flex-col gap-2">
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
         <Button 
           size="sm"
           className="bg-white text-gray-700 hover:bg-gray-100 shadow-md"
