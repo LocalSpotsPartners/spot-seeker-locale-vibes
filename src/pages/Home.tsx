@@ -133,10 +133,6 @@ export default function Home() {
   const handleSearchSelection = (value: string) => {
     setSearchQuery(value);
     setSearchOpen(false);
-    // Focus back on the input so user can continue typing
-    setTimeout(() => {
-      searchInputRef.current?.focus();
-    }, 100);
   };
   
   return <Layout>
@@ -173,11 +169,23 @@ export default function Home() {
               />
               
               {searchSuggestions.length > 0 && (
-                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                <Popover 
+                  open={searchOpen} 
+                  onOpenChange={(open) => {
+                    // Only allow closing the popover, never auto-open it
+                    if (!open) setSearchOpen(false);
+                  }}
+                >
                   <PopoverTrigger asChild>
                     <div className="w-0 h-0 overflow-hidden" />
                   </PopoverTrigger>
-                  <PopoverContent className="p-0 w-[300px]" align="start">
+                  <PopoverContent 
+                    className="p-0 w-[300px]" 
+                    align="start" 
+                    sideOffset={5}
+                    onEscapeKeyDown={() => setSearchOpen(false)}
+                    onInteractOutside={() => setSearchOpen(false)}
+                  >
                     <Command>
                       <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
