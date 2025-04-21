@@ -3,24 +3,32 @@ import { useState, useEffect } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
-import { PlaceFeature } from "@/types";
-import { db } from "@/db/database";
-import { MapView } from "@/components/map/MapView";
+import { PlaceFeature, Place } from "@/types";
 import { Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Home() {
-  const [places, setPlaces] = useState([]);
+  const [places, setPlaces] = useState<Place[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMap, setShowMap] = useState(false);
 
-  // Load places from the database
+  // Load places from Supabase
   useEffect(() => {
     const loadPlaces = async () => {
       try {
-        const allPlaces = await db.places.toArray();
-        setPlaces(allPlaces);
+        const { data, error } = await supabase
+          .from('places')
+          .select('*');
+        
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setPlaces(data);
+        }
       } catch (error) {
         console.error("Failed to load places:", error);
       } finally {

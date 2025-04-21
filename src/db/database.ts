@@ -1,42 +1,28 @@
 
-import Dexie, { type Table } from 'dexie';
-import { Place, Review, User } from '../types';
+import { supabase } from '@/integrations/supabase/client';
+import { Place, Review } from '../types';
 import { samplePlaces, sampleReviews } from './sampleData';
 
 // Create a Dexie database for client-side storage
-class LocaleSpotDatabase extends Dexie {
-  places!: Table<Place>;
-  reviews!: Table<Review>;
-  users!: Table<User>;
-  
-  constructor() {
-    super('localeSpotDB');
-    this.version(1).stores({
-      places: 'id, name, *features',
-      reviews: 'id, placeId, userId, rating',
-      users: 'id, email'
-    });
-  }
-
+class LocaleSpotDatabase {
   async initializeSampleData() {
-    const placesCount = await this.places.count();
-    const reviewsCount = await this.reviews.count();
-    
-    if (placesCount === 0) {
-      // Only seed places if database is empty
-      await this.places.bulkAdd(samplePlaces);
+    const { data: places } = await supabase.from('places').select('*');
+    if (!places || places.length === 0) {
+      // If no places in Supabase, initialize with sample data
+      await supabase.from('places').insert(samplePlaces);
     }
-    
-    if (reviewsCount === 0) {
-      // Only seed reviews if database is empty
-      await this.reviews.bulkAdd(sampleReviews);
+
+    const { data: reviews } = await supabase.from('reviews').select('*');
+    if (!reviews || reviews.length === 0) {
+      // If no reviews in Supabase, initialize with sample data
+      await supabase.from('reviews').insert(sampleReviews);
     }
   }
 }
 
 export const db = new LocaleSpotDatabase();
 
-// Initialize the database with sample data
+// Initialize the database with sample data if needed
 export const initDB = async () => {
   await db.initializeSampleData();
 };
