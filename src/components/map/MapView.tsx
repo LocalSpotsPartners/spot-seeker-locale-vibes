@@ -44,6 +44,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
+      // Create a new map instance
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
@@ -51,6 +52,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         zoom: 11.5
       });
       
+      // Add event listeners
       newMap.on('load', () => {
         console.log('Map loaded successfully');
         setMapInitialized(true);
@@ -62,6 +64,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         toast.error('Error loading map');
       });
       
+      // Add navigation controls
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
       
       setMap(newMap);
@@ -76,7 +79,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       console.error('Error initializing map:', err);
       toast.error('Failed to initialize map');
     }
-  }, [mapboxToken, map]);
+  }, [mapboxToken]);
   
   // Set map center based on filtered places
   useEffect(() => {
@@ -146,7 +149,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
   }
 
   return (
-    <div className="h-[calc(100vh-4rem)] w-full bg-gray-100">
+    <div className="h-full w-full bg-gray-100 relative">
       <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
         <Button 
           size="sm" 

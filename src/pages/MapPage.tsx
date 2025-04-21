@@ -5,6 +5,7 @@ import { MapView } from "@/components/map/MapView";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
 import { PlaceFeature, Place } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function MapPage() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -14,13 +15,21 @@ export default function MapPage() {
   useEffect(() => {
     const loadPlaces = async () => {
       try {
+        setIsLoading(true);
+        console.log('Fetching places from Supabase...');
+        
         const { data, error } = await supabase
           .from('places')
           .select('*');
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching places:', error);
+          toast.error('Failed to load places');
+          throw error;
+        }
         
         if (data) {
+          console.log('Places loaded:', data.length);
           const transformedPlaces: Place[] = data.map(item => ({
             id: item.id,
             name: item.name,
@@ -37,6 +46,7 @@ export default function MapPage() {
             }
           }));
           setPlaces(transformedPlaces);
+          toast.success(`Loaded ${transformedPlaces.length} places`);
         }
       } catch (error) {
         console.error("Failed to load places:", error);
@@ -50,7 +60,7 @@ export default function MapPage() {
 
   return (
     <Layout>
-      <div className="relative h-[calc(100vh-4rem)]">
+      <div className="relative h-[calc(100vh-4rem)] w-full">
         <div className="absolute top-0 left-0 right-0 z-10 bg-white/95 backdrop-blur-sm shadow-md p-4">
           <FeatureFilter onFilterChange={setSelectedFeatures} />
         </div>
@@ -58,10 +68,10 @@ export default function MapPage() {
         {isLoading ? (
           <div className="h-full flex items-center justify-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-locale-500 border-r-transparent"></div>
-            <p className="ml-3 text-gray-600">Loading map...</p>
+            <p className="ml-3 text-gray-600">Loading places...</p>
           </div>
         ) : (
-          <div className="pt-24">
+          <div className="pt-20 h-[calc(100%-5rem)]">
             <MapView places={places} selectedFeatures={selectedFeatures} />
           </div>
         )}
