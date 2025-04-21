@@ -105,12 +105,12 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
   }
 
   return (
-    <div className="h-full w-full bg-gray-100 relative" style={{ minHeight: '500px' }}>
+    <div className="h-full w-full relative overflow-hidden rounded-lg border border-gray-200" style={{ minHeight: '500px' }}>
       <MapControls 
         onLocationClick={handleUserLocation}
         placesCount={filteredPlaces.filter(p => p.location && p.location.lat !== 0 && p.location.lng !== 0).length}
       />
-      <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '500px' }} />
+      <div ref={mapContainer} className="absolute inset-0" />
       {highlightedPlace && (
         <div className="absolute top-4 left-4 z-10">
           <HighlightedPlace place={highlightedPlace} />

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
@@ -93,23 +94,12 @@ export default function Home() {
     )
     .map(neighborhood => ({ type: 'neighborhood', value: neighborhood || '' }));
     
-    const locationSuggestions = Array.from(
-      new Set(
-        places
-          .map(p => p.location.address.split(',')[0]?.trim())
-          .filter(Boolean)
-      )
-    )
-    .filter(area => 
-      area.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .map(area => ({ type: 'location', value: area }));
-    
     const nameSuggestions = places
       .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .map(p => ({ type: 'name', value: p.name }));
     
-    return [...neighborhoodSuggestions, ...locationSuggestions, ...nameSuggestions].slice(0, 5);
+    // Return only neighborhood and name suggestions, no location suggestions
+    return [...neighborhoodSuggestions, ...nameSuggestions].slice(0, 5);
   }, [places, searchQuery]);
 
   const filteredPlaces = useMemo(() => {
@@ -118,10 +108,9 @@ export default function Home() {
       const matchesFeatures = selectedFeatures.length === 0 || 
         selectedFeatures.every(feature => place.features.includes(feature));
 
-      // Search query filter
+      // Search query filter - only filter by name and neighborhood
       const matchesSearch = !searchQuery || 
         place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        place.location.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (place.neighborhood && place.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()));
 
       // Map bounds filter
@@ -155,6 +144,11 @@ export default function Home() {
     setSearchOpen(false);
   };
 
+  // Handle input change directly without opening popover
+  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
   return (
     <Layout>
       <div className="container py-8 pb-20 md:py-8">
@@ -166,57 +160,50 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-              <PopoverTrigger asChild>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    type="text"
-                    placeholder="Search by name, location, or neighborhood..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 md:text-base"
-                    onFocus={() => setSearchOpen(true)}
-                  />
-                </div>
-              </PopoverTrigger>
-              <PopoverContent className="p-0 w-[300px]" align="start">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search places..." 
-                    value={searchQuery}
-                    onValueChange={setSearchQuery}
-                  />
-                  <CommandList>
-                    <CommandEmpty>No results found.</CommandEmpty>
-                    {searchSuggestions.length > 0 && (
-                      <CommandGroup>
-                        {searchSuggestions.map((suggestion) => (
-                          <CommandItem
-                            key={`${suggestion.type}-${suggestion.value}`}
-                            onSelect={() => handleSearchSelection(suggestion.value)}
-                            className="flex items-center gap-2"
-                          >
-                            {suggestion.type === 'neighborhood' ? (
-                              <Map className="h-4 w-4 text-gray-400" />
-                            ) : suggestion.type === 'location' ? (
-                              <Map className="h-4 w-4 text-gray-400" />
-                            ) : (
-                              <Search className="h-4 w-4 text-gray-400" />
-                            )}
-                            <span className="text-base">{suggestion.value}</span>
-                            <span className="text-xs text-gray-400 ml-auto">
-                              {suggestion.type === 'neighborhood' ? 'Neighborhood' : 
-                               suggestion.type === 'location' ? 'Area' : 'Place'}
-                            </span>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    )}
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                type="text"
+                placeholder="Search by name or neighborhood..."
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+                className="pl-9 md:text-base"
+                onClick={() => setSearchOpen(true)}
+              />
+              {searchOpen && searchSuggestions.length > 0 && (
+                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <div className="w-full" />
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0 w-[300px]" align="start">
+                    <Command>
+                      <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandGroup>
+                          {searchSuggestions.map((suggestion) => (
+                            <CommandItem
+                              key={`${suggestion.type}-${suggestion.value}`}
+                              onSelect={() => handleSearchSelection(suggestion.value)}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              {suggestion.type === 'neighborhood' ? (
+                                <Map className="h-4 w-4 text-gray-400" />
+                              ) : (
+                                <Search className="h-4 w-4 text-gray-400" />
+                              )}
+                              <span className="text-base">{suggestion.value}</span>
+                              <span className="text-xs text-gray-400 ml-auto">
+                                {suggestion.type === 'neighborhood' ? 'Neighborhood' : 'Place'}
+                              </span>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
             <Button
               variant="outline"
               className="flex items-center gap-2 md:hidden"

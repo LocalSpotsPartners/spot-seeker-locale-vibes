@@ -20,10 +20,12 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
+      // Ensure the container has proper dimensions before initializing the map
       if (mapContainer.current) {
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
         mapContainer.current.style.width = '100%';
+        mapContainer.current.style.position = 'relative'; // Add position:relative
       }
       
       const newMap = new mapboxgl.Map({
@@ -57,7 +59,7 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
       console.error('Error initializing map:', err);
       toast.error('Failed to initialize map: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
-  }, [mapboxToken, onMapLoad]);
+  }, [mapboxToken, onMapLoad, mapContainer]);
 
   return { map, mapInitialized };
 };
