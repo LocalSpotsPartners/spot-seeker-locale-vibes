@@ -20,46 +20,60 @@ export const useMapInitialization = ({ mapContainer, mapboxToken, onMapLoad }: M
       console.log('Initializing map with token', mapboxToken.substring(0, 5) + '...');
       mapboxgl.accessToken = mapboxToken;
       
-      // Ensure the container has proper dimensions before initializing the map
+      // Ensure container has proper dimensions before initializing the map
       if (mapContainer.current) {
+        mapContainer.current.style.width = '100%';
         mapContainer.current.style.height = '100%';
         mapContainer.current.style.minHeight = '500px';
-        mapContainer.current.style.width = '100%';
-        mapContainer.current.style.position = 'relative'; // Add position:relative
+        mapContainer.current.style.position = 'relative';
+        
+        // Force the container to be visible
+        mapContainer.current.style.display = 'block';
+        mapContainer.current.style.visibility = 'visible';
+        mapContainer.current.style.opacity = '1';
       }
       
-      const newMap = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [-74.006, 40.7128],
-        zoom: 11.5,
-        preserveDrawingBuffer: true
-      });
-      
-      newMap.on('load', () => {
-        console.log('Map loaded successfully');
-        setMapInitialized(true);
-        onMapLoad?.();
-      });
-      
-      newMap.on('error', (e) => {
-        console.error('Map error:', e);
-        toast.error('Error loading map: ' + e.error?.message || 'Unknown error');
-      });
-      
-      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
-      
-      setMap(newMap);
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        try {
+          const newMap = new mapboxgl.Map({
+            container: mapContainer.current!,
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [-74.006, 40.7128],
+            zoom: 11.5,
+            preserveDrawingBuffer: true
+          });
+          
+          newMap.on('load', () => {
+            console.log('Map loaded successfully');
+            setMapInitialized(true);
+            onMapLoad?.();
+          });
+          
+          newMap.on('error', (e) => {
+            console.error('Map error:', e);
+            toast.error('Error loading map: ' + e.error?.message || 'Unknown error');
+          });
+          
+          newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+          setMap(newMap);
+        } catch (err) {
+          console.error('Error creating map instance:', err);
+          toast.error('Failed to create map: ' + (err instanceof Error ? err.message : 'Unknown error'));
+        }
+      }, 100);
       
       return () => {
-        console.log('Cleaning up map');
-        newMap.remove();
+        if (map) {
+          console.log('Cleaning up map');
+          map.remove();
+        }
       };
     } catch (err) {
       console.error('Error initializing map:', err);
       toast.error('Failed to initialize map: ' + (err instanceof Error ? err.message : 'Unknown error'));
     }
-  }, [mapboxToken, onMapLoad, mapContainer]);
+  }, [mapboxToken, onMapLoad, mapContainer, map]);
 
   return { map, mapInitialized };
 };

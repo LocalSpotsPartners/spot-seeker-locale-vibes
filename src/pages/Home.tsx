@@ -98,7 +98,7 @@ export default function Home() {
       .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
       .map(p => ({ type: 'name', value: p.name }));
     
-    // Return only neighborhood and name suggestions, no location suggestions
+    // Return only neighborhood and name suggestions
     return [...neighborhoodSuggestions, ...nameSuggestions].slice(0, 5);
   }, [places, searchQuery]);
 
@@ -113,17 +113,9 @@ export default function Home() {
         place.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (place.neighborhood && place.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Map bounds filter
-      const withinBounds = !mapBounds || (
-        place.location.lat <= mapBounds.north &&
-        place.location.lat >= mapBounds.south &&
-        place.location.lng <= mapBounds.east &&
-        place.location.lng >= mapBounds.west
-      );
-
-      return matchesFeatures && matchesSearch && withinBounds;
+      return matchesFeatures && matchesSearch;
     });
-  }, [places, selectedFeatures, searchQuery, mapBounds]);
+  }, [places, selectedFeatures, searchQuery]);
 
   const handleMapViewportChange = (bounds: {
     north: number;
@@ -144,11 +136,6 @@ export default function Home() {
     setSearchOpen(false);
   };
 
-  // Handle input change directly without opening popover
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-  };
-
   return (
     <Layout>
       <div className="container py-8 pb-20 md:py-8">
@@ -166,9 +153,10 @@ export default function Home() {
                 type="text"
                 placeholder="Search by name or neighborhood..."
                 value={searchQuery}
-                onChange={handleSearchInputChange}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 md:text-base"
-                onClick={() => setSearchOpen(true)}
+                onFocus={() => searchQuery.trim() !== '' && setSearchOpen(true)}
+                onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
               />
               {searchOpen && searchSuggestions.length > 0 && (
                 <Popover open={searchOpen} onOpenChange={setSearchOpen}>
