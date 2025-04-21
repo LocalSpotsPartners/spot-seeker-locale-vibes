@@ -2,6 +2,7 @@
 import { Review } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface ReviewListProps {
   reviews: Review[];
@@ -32,7 +33,9 @@ export function ReviewList({ reviews }: ReviewListProps) {
               <div className="flex items-center">
                 <h4 className="font-medium">{review.userName}</h4>
                 <span className="text-gray-400 text-sm mx-2">•</span>
-                <span className="text-gray-500 text-sm">{review.date}</span>
+                <span className="text-gray-500 text-sm">
+                  {formatDistanceToNow(new Date(review.date), { addSuffix: true })}
+                </span>
               </div>
               
               <div className="flex">
