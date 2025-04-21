@@ -17,17 +17,20 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 interface MapViewProps {
   places: Place[];
   selectedFeatures: PlaceFeature[];
+  hoveredPlace?: Place | null;
 }
 
-export function MapView({ places, selectedFeatures }: MapViewProps) {
+export function MapView({ places, selectedFeatures, hoveredPlace }: MapViewProps) {
   const [popupInfo, setPopupInfo] = useState<Place | null>(null);
   const [highlightedPlace, setHighlightedPlace] = useState<Place | null>(null);
   const [map, setMap] = useState<mapboxgl.Map | null>(null);
   const [mapInitialized, setMapInitialized] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
+  const [userLocationMarker, setUserLocationMarker] = useState<mapboxgl.Marker | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
   const { mapboxToken, isLoadingToken, error: mapboxError } = useMapbox();
   const { geocodedPlaces } = useGeocoding(places);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const markersRef = useRef<{marker: mapboxgl.Marker, place: Place}[]>([]);
 
   const filteredPlaces = useMemo(() => {
     if (selectedFeatures.length === 0) {
@@ -76,8 +79,9 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       
       return () => {
         console.log('Cleaning up map');
-        markersRef.current.forEach(marker => marker.remove());
+        markersRef.current.forEach(({marker}) => marker.remove());
         markersRef.current = [];
+        if (userLocationMarker) userLocationMarker.remove();
         newMap.remove();
       };
     } catch (err) {
@@ -102,6 +106,62 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [map, mapInitialized, filteredPlaces]);
   
+  // Add or update user location marker
+  useEffect(() => {
+    if (!map || !mapInitialized || !userLocation) return;
+    
+    if (userLocationMarker) {
+      userLocationMarker.setLngLat(userLocation);
+    } else {
+      const el = document.createElement('div');
+      el.className = 'user-location-marker';
+      el.innerHTML = `
+        <div class="w-6 h-6 rounded-full bg-blue-500 border-2 border-white shadow-lg flex items-center justify-center">
+          <div class="w-2 h-2 bg-white rounded-full"></div>
+        </div>
+      `;
+      
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: 'center'
+      })
+        .setLngLat(userLocation)
+        .addTo(map);
+      
+      setUserLocationMarker(marker);
+    }
+  }, [map, mapInitialized, userLocation]);
+  
+  // Effect for handling the hovered place
+  useEffect(() => {
+    if (!map || !mapInitialized || !hoveredPlace) return;
+    
+    // Find the marker for the hovered place
+    const markerObj = markersRef.current.find(m => m.place.id === hoveredPlace.id);
+    if (markerObj) {
+      // Highlight the marker
+      const markerEl = markerObj.marker.getElement();
+      markerEl.classList.add('hovered-marker');
+      
+      // Center the map on the hovered place if it has coordinates
+      if (hoveredPlace.coordinates) {
+        map.easeTo({
+          center: hoveredPlace.coordinates,
+          duration: 800
+        });
+      }
+      
+      setHighlightedPlace(hoveredPlace);
+      
+      return () => {
+        markerEl.classList.remove('hovered-marker');
+        if (!hoveredPlace) {
+          setHighlightedPlace(null);
+        }
+      };
+    }
+  }, [map, mapInitialized, hoveredPlace]);
+  
   useEffect(() => {
     if (!map || !mapInitialized) {
       console.log('Cannot add markers: map not ready', {
@@ -114,7 +174,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     console.log('Adding markers for', filteredPlaces.length, 'places');
     console.log('Places with coordinates:', filteredPlaces.filter(p => p.coordinates).length);
     
-    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current.forEach(({marker}) => marker.remove());
     markersRef.current = [];
     
     filteredPlaces.forEach(place => {
@@ -130,7 +190,16 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         });
         
         if (marker) {
-          markersRef.current.push(marker);
+          // Add CSS class for styling
+          const el = marker.getElement();
+          el.classList.add('place-marker');
+          
+          // Add hover effect
+          if (hoveredPlace && hoveredPlace.id === place.id) {
+            el.classList.add('hovered-marker');
+          }
+          
+          markersRef.current.push({marker, place});
         }
       } else {
         console.log(`No coordinates for ${place.name}`);
@@ -138,7 +207,24 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     });
     
     console.log('Created', markersRef.current.length, 'markers');
-  }, [filteredPlaces, map, mapInitialized]);
+    
+    // Add CSS for marker highlighting
+    const style = document.createElement('style');
+    style.textContent = `
+      .place-marker {
+        transition: transform 0.3s ease;
+      }
+      .hovered-marker {
+        transform: scale(1.3);
+        z-index: 10;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, [filteredPlaces, map, mapInitialized, hoveredPlace]);
   
   useEffect(() => {
     if (!map || !mapInitialized) return;
@@ -154,6 +240,32 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
     }
   }, [popupInfo, map, mapInitialized]);
 
+  // Handle user location
+  const handleUserLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const userCoords: [number, number] = [
+          position.coords.longitude,
+          position.coords.latitude
+        ];
+        
+        setUserLocation(userCoords);
+        
+        if (map) {
+          map.flyTo({
+            center: userCoords,
+            zoom: 14,
+            duration: 2000
+          });
+        }
+      },
+      error => {
+        console.error('Error getting user location:', error);
+        toast.error('Could not get your location. Please check your browser permissions.');
+      }
+    );
+  };
+
   if (isLoadingToken) {
     return <MapLoading />;
   }
@@ -168,19 +280,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
         <Button 
           size="sm"
           className="bg-white text-gray-700 hover:bg-gray-100 shadow-md"
-          onClick={() => navigator.geolocation.getCurrentPosition(
-            position => {
-              if (map) {
-                map.flyTo({
-                  center: [position.coords.longitude, position.coords.latitude],
-                  zoom: 13
-                });
-              }
-            }, 
-            error => {
-              console.log('Error getting current position:', error);
-            }
-          )}
+          onClick={handleUserLocation}
         >
           <MapPin className="h-4 w-4 mr-1" />
           My Location
@@ -188,7 +288,7 @@ export function MapView({ places, selectedFeatures }: MapViewProps) {
       </div>
       <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '500px' }} />
       {highlightedPlace && (
-        <div className="absolute bottom-20 left-4 z-10">
+        <div className="absolute top-4 left-4 z-10">
           <HighlightedPlace place={highlightedPlace} />
         </div>
       )}

@@ -14,6 +14,7 @@ export default function Home() {
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileMap, setShowMobileMap] = useState(false);
+  const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
 
   useEffect(() => {
     const loadPlaces = async () => {
@@ -88,10 +89,18 @@ export default function Home() {
         ) : (
           <div className="md:grid md:grid-cols-2 md:gap-6 lg:gap-8">
             <div className={`${showMobileMap ? 'hidden md:block' : ''}`}>
-              <PlaceGrid places={places} selectedFeatures={selectedFeatures} />
+              <PlaceGrid 
+                places={places} 
+                selectedFeatures={selectedFeatures} 
+                onPlaceHover={setHoveredPlace}
+              />
             </div>
             <div className={`${!showMobileMap ? 'hidden md:block' : ''} md:sticky md:top-24 h-[calc(100vh-8rem)]`}>
-              <MapView places={places} selectedFeatures={selectedFeatures} />
+              <MapView 
+                places={places} 
+                selectedFeatures={selectedFeatures}
+                hoveredPlace={hoveredPlace} 
+              />
             </div>
           </div>
         )}

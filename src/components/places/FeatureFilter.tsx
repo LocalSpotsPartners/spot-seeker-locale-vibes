@@ -1,15 +1,15 @@
 
-import { useMemo } from "react";
+import { useState } from "react";
 import { PlaceFeature } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Filter } from "lucide-react";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface FeatureFilterProps {
   onFilterChange: (features: PlaceFeature[]) => void;
@@ -28,12 +28,18 @@ const availableFeatures: PlaceFeature[] = [
 ];
 
 export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilterProps) {
-  const handleFeatureToggle = (feature: PlaceFeature) => {
-    if (selectedFeatures.includes(feature)) {
-      onFilterChange(selectedFeatures.filter(f => f !== feature));
-    } else {
+  const [open, setOpen] = useState(false);
+
+  const handleFeatureToggle = (feature: PlaceFeature, checked: boolean) => {
+    if (checked) {
       onFilterChange([...selectedFeatures, feature]);
+    } else {
+      onFilterChange(selectedFeatures.filter(f => f !== feature));
     }
+  };
+
+  const clearFilters = () => {
+    onFilterChange([]);
   };
 
   return (
@@ -43,33 +49,57 @@ export function FeatureFilter({ onFilterChange, selectedFeatures }: FeatureFilte
         <h3 className="font-medium">Filter by features</h3>
       </div>
       
-      <Select
-        onValueChange={(value: PlaceFeature) => handleFeatureToggle(value)}
-      >
-        <SelectTrigger className="w-full mb-3">
-          <SelectValue placeholder="Select features..." />
-        </SelectTrigger>
-        <SelectContent>
-          {availableFeatures.map(feature => (
-            <SelectItem 
-              key={feature} 
-              value={feature}
-              className="cursor-pointer"
-            >
-              {feature.charAt(0).toUpperCase() + feature.slice(1)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" className="w-full justify-start font-normal text-left">
+            {selectedFeatures.length > 0 
+              ? `Selected Filters (${selectedFeatures.length})` 
+              : "Select features..."}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-4" align="start">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              {availableFeatures.map(feature => (
+                <div key={feature} className="flex items-center space-x-2">
+                  <Checkbox 
+                    id={`feature-${feature}`}
+                    checked={selectedFeatures.includes(feature)}
+                    onCheckedChange={(checked) => 
+                      handleFeatureToggle(feature, checked as boolean)
+                    }
+                  />
+                  <label 
+                    htmlFor={`feature-${feature}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {feature.charAt(0).toUpperCase() + feature.slice(1)}
+                  </label>
+                </div>
+              ))}
+            </div>
+            {selectedFeatures.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearFilters}
+                className="mt-2 w-full"
+              >
+                Clear All Filters
+              </Button>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
       
       {selectedFeatures.length > 0 && (
-        <div className="flex flex-wrap gap-2 justify-start">
+        <div className="flex flex-wrap gap-2 justify-start mt-3">
           {selectedFeatures.map(feature => (
             <Badge 
               key={feature}
               variant="outline"
               className="cursor-pointer bg-locale-100 text-locale-800 border-locale-800"
-              onClick={() => handleFeatureToggle(feature)}
+              onClick={() => handleFeatureToggle(feature, false)}
             >
               {feature.charAt(0).toUpperCase() + feature.slice(1)}
             </Badge>

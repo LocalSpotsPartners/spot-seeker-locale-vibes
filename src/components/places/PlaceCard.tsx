@@ -15,9 +15,11 @@ import {
 
 interface PlaceCardProps {
   place: Place;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
-export function PlaceCard({ place }: PlaceCardProps) {
+export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps) {
   const [isWished, setIsWished] = useState(false);
 
   // Check wish list status on mount
@@ -51,7 +53,11 @@ export function PlaceCard({ place }: PlaceCardProps) {
   };
 
   return (
-    <Card className="transition hover:shadow-lg relative group">
+    <Card 
+      className="transition hover:shadow-lg relative group"
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       <Link to={`/place/${place.id}`} className="block">
         {place.images && place.images.length > 0 ? (
           <div className="relative h-40">
