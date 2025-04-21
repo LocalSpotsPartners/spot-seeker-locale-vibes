@@ -21,13 +21,14 @@ export default function MapPage() {
         if (error) throw error;
         
         if (data) {
-          // Transform the data to match our Place type
           const transformedPlaces: Place[] = data.map(item => ({
             id: item.id,
             name: item.name,
             description: item.description || '',
             images: item.images || [],
-            features: item.features || [],
+            features: (item.features || []).filter((feature): feature is PlaceFeature => 
+              ['rooftop', 'outdoor', 'coffee', 'wifi', 'bar', 'restaurant', 'quiet', 'view'].includes(feature)
+            ),
             rating: item.rating || 0,
             location: {
               lat: Number(item.lat) || 0,

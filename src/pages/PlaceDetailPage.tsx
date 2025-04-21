@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
@@ -6,7 +5,7 @@ import { PlaceDetail } from "@/components/places/PlaceDetail";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Place, Review } from "@/types";
+import { Place, Review, PlaceFeature } from "@/types";
 
 export default function PlaceDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -25,7 +24,6 @@ export default function PlaceDetailPage() {
       }
 
       try {
-        // Fetch place details
         const { data: placeData, error: placeError } = await supabase
           .from('places')
           .select('*')
@@ -35,13 +33,14 @@ export default function PlaceDetailPage() {
         if (placeError) throw placeError;
         if (!placeData) throw new Error('Place not found');
         
-        // Transform to our Place type
         const transformedPlace: Place = {
           id: placeData.id,
           name: placeData.name,
           description: placeData.description || '',
           images: placeData.images || [],
-          features: placeData.features || [],
+          features: (placeData.features || []).filter((feature): feature is PlaceFeature => 
+            ['rooftop', 'outdoor', 'coffee', 'wifi', 'bar', 'restaurant', 'quiet', 'view'].includes(feature)
+          ),
           rating: placeData.rating || 0,
           location: {
             lat: Number(placeData.lat) || 0,
@@ -52,7 +51,6 @@ export default function PlaceDetailPage() {
         
         setPlace(transformedPlace);
         
-        // Fetch reviews
         const { data: reviewsData, error: reviewsError } = await supabase
           .from('reviews')
           .select('*')
@@ -61,7 +59,6 @@ export default function PlaceDetailPage() {
         
         if (reviewsError) throw reviewsError;
         
-        // Transform reviews to our Review type
         if (reviewsData) {
           const transformedReviews: Review[] = reviewsData.map(review => ({
             id: review.id,
