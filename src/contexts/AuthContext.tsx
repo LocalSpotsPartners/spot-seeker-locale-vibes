@@ -26,9 +26,10 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Initialize all state hooks at the top level - not conditionally
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);  // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
 
   // Initialize with default subscription state
   const [subscription, setSubscription] = useState({
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     
     // Listen for auth changes
-    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session);
       if (session) {
         setUser({
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Cleanup subscription
     return () => {
-      authSubscription.unsubscribe();
+      data?.subscription.unsubscribe();
     };
   }, []);
 
