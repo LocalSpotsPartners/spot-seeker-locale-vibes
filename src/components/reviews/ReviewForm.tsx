@@ -8,13 +8,17 @@ interface ReviewFormProps {
   placeId: string;
   onAddReview: (review: { placeId: string; rating: number; comment: string }) => void;
   onCancel: () => void;
+  isSubmitting?: boolean;  // Added isSubmitting as an optional prop
 }
 
-export function ReviewForm({ placeId, onAddReview, onCancel }: ReviewFormProps) {
+export function ReviewForm({ placeId, onAddReview, onCancel, isSubmitting = false }: ReviewFormProps) {
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [comment, setComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localIsSubmitting, setLocalIsSubmitting] = useState(false);
+  
+  // Use either the prop or local state for submission status
+  const submitting = isSubmitting || localIsSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +27,7 @@ export function ReviewForm({ placeId, onAddReview, onCancel }: ReviewFormProps) 
       return; // Require at least 1 star
     }
     
-    setIsSubmitting(true);
+    setLocalIsSubmitting(true);
     
     try {
       await onAddReview({
@@ -36,7 +40,7 @@ export function ReviewForm({ placeId, onAddReview, onCancel }: ReviewFormProps) 
       setRating(0);
       setComment("");
     } finally {
-      setIsSubmitting(false);
+      setLocalIsSubmitting(false);
     }
   };
 
@@ -83,15 +87,15 @@ export function ReviewForm({ placeId, onAddReview, onCancel }: ReviewFormProps) 
           type="button" 
           variant="outline"
           onClick={onCancel}
-          disabled={isSubmitting}
+          disabled={submitting}
         >
           Cancel
         </Button>
         <Button 
           type="submit" 
-          disabled={rating === 0 || isSubmitting}
+          disabled={rating === 0 || submitting}
         >
-          {isSubmitting ? "Submitting..." : "Submit Review"}
+          {submitting ? "Submitting..." : "Submit Review"}
         </Button>
       </div>
     </form>
