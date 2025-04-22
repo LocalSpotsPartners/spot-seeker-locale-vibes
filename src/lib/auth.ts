@@ -25,7 +25,7 @@ export const login = async (email: string, password: string): Promise<User> => {
     id: data.user.id,
     name: data.user.user_metadata.name || data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: data.user.user_metadata.avatar_url,
+    avatar: data.user.user_metadata.avatar_url || null,
   };
 
   return user;
@@ -62,12 +62,12 @@ export const signup = async (email: string, password: string): Promise<User> => 
     throw new Error("No user data returned");
   }
 
-  // Define user with explicit type annotations and null for avatar
+  // Define user with explicit type
   const user: User = {
     id: data.user.id,
     name: data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: null, // Explicitly set to null to avoid type inference issues
+    avatar: null, // Using null explicitly to avoid type inference issues
   };
 
   // Log the successful signup for debugging
@@ -129,7 +129,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     id: user.id,
     name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
-    avatar: user.user_metadata.avatar_url || null, // Added null fallback here too
+    avatar: user.user_metadata.avatar_url || null,
   };
 };
 
