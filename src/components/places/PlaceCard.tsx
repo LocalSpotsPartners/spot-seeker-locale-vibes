@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Star, Share2, Mail, MessageSquare, Whatsapp } from "lucide-react";
+import { Star, Share2, Mail, MessageSquare, whatsapp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -133,7 +133,7 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
                 Message
               </DropdownMenuItem>
               <DropdownMenuItem onClick={(e) => handleShare(e, 'whatsapp')}>
-                <Whatsapp className="mr-2 h-4 w-4" />
+                <whatsapp className="mr-2 h-4 w-4" />
                 WhatsApp
               </DropdownMenuItem>
             </DropdownMenuContent>
