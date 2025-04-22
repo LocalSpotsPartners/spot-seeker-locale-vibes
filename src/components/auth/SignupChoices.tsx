@@ -5,7 +5,7 @@ import { Clock, DollarSign } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function SignupChoices() {
   const navigate = useNavigate();
@@ -13,12 +13,33 @@ export function SignupChoices() {
     trial: false,
     premium: false
   });
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Check for authenticated user on component mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setUserId(session.user.id);
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const startFreeTrial = async () => {
     try {
       setIsLoading({...isLoading, trial: true});
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No user found");
+      
+      // If we don't have userId yet, get it again
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        currentUserId = session?.user?.id;
+        if (!currentUserId) {
+          throw new Error("No user found. Please try logging in again.");
+        }
+      }
 
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -28,7 +49,7 @@ export function SignupChoices() {
         .update({
           trial_end: tomorrow.toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq('user_id', currentUserId);
 
       if (error) throw error;
 
@@ -36,7 +57,7 @@ export function SignupChoices() {
       navigate('/');
     } catch (error) {
       console.error('Error starting trial:', error);
-      toast.error("Failed to start trial");
+      toast.error(error instanceof Error ? error.message : "Failed to start trial");
     } finally {
       setIsLoading({...isLoading, trial: false});
     }
@@ -45,7 +66,18 @@ export function SignupChoices() {
   const startPremium = async () => {
     try {
       setIsLoading({...isLoading, premium: true});
-      const { data, error } = await supabase.functions.invoke('create-payment');
+      
+      // Make sure we have a session before proceeding
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("No active session. Please log in again.");
+      }
+      
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) {
         console.error('Error invoking function:', error);
@@ -61,7 +93,7 @@ export function SignupChoices() {
       window.location.href = data.url;
     } catch (error) {
       console.error('Error creating payment:', error);
-      toast.error("Failed to initiate payment");
+      toast.error(error instanceof Error ? error.message : "Failed to initiate payment");
       setIsLoading({...isLoading, premium: false});
     }
   };

@@ -15,15 +15,33 @@ serve(async (req) => {
 
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
   );
 
   try {
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    // Extract the authorization token from the request headers
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Missing Authorization header");
+    }
     
-    if (!user?.email) throw new Error("User not authenticated");
+    const token = authHeader.replace("Bearer ", "");
+    console.log("Attempting to get user with token");
+    
+    // Get the user from the auth token
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError) {
+      console.error("Auth error:", userError);
+      throw new Error("Authentication error: " + userError.message);
+    }
+    
+    const user = userData.user;
+    if (!user?.email) {
+      throw new Error("User not authenticated or email not available");
+    }
+    
+    console.log("User authenticated:", user.email);
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -36,6 +54,8 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
+    console.log("Creating checkout session");
+    
     // Create checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -58,12 +78,15 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/`,
     });
 
+    console.log("Checkout session created:", session.id);
+    
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("Error in create-payment:", error);
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
