@@ -12,6 +12,18 @@ import { MapView } from "@/components/map/MapView";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+// Define custom styles to prevent auto-focus/selection in Command component
+const customStyles = `
+  .remove-auto-focus [cmdk-item][data-selected] {
+    background: transparent;
+    color: inherit;
+  }
+  .remove-auto-focus [cmdk-item]:hover {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+`;
+
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<PlaceFeature[]>([]);
@@ -27,6 +39,21 @@ export default function Home() {
     east: number;
     west: number;
   } | null>(null);
+  
+  // Add this to manage keyboard selection state
+  const [keyboardNavigating, setKeyboardNavigating] = useState(false);
+  
+  useEffect(() => {
+    // Add the styles to the document head
+    const styleElement = document.createElement('style');
+    styleElement.textContent = customStyles;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      // Clean up when component unmounts
+      document.head.removeChild(styleElement);
+    };
+  }, []);
   
   useEffect(() => {
     const loadPlaces = async () => {
@@ -195,17 +222,17 @@ export default function Home() {
                       setTimeout(() => setSearchOpen(false), 100);
                     }}
                   >
-                    <Command loop={false} shouldFilter={false} className="remove-auto-focus">
-                      <style jsx global>{`
-                        .remove-auto-focus [cmdk-item][data-selected] {
-                          background: transparent;
-                          color: inherit;
+                    <Command 
+                      loop={false} 
+                      shouldFilter={false} 
+                      className="remove-auto-focus"
+                      onKeyDown={(e) => {
+                        // Set keyboard navigating flag when using keyboard navigation
+                        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                          setKeyboardNavigating(true);
                         }
-                        .remove-auto-focus [cmdk-item]:hover {
-                          background: var(--accent);
-                          color: var(--accent-foreground);
-                        }
-                      `}</style>
+                      }}
+                    >
                       <CommandList>
                         <CommandEmpty>No results found.</CommandEmpty>
                         <CommandGroup>
@@ -218,6 +245,7 @@ export default function Home() {
                               }} 
                               className="flex items-center gap-2 cursor-pointer hover:bg-accent hover:text-accent-foreground"
                               value={suggestion.value}
+                              data-no-auto-select={!keyboardNavigating}
                             >
                               {suggestion.type === 'neighborhood' ? 
                                 <Map className="h-4 w-4 text-gray-400" /> : 
