@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
 import { SignupChoices } from './SignupChoices';
+import { supabase } from "@/integrations/supabase/client";
 
 interface SignupFormProps {
   onToggleForm: () => void;
@@ -21,8 +22,22 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
     setError(null);
     
     try {
+      // Sign up the user
       await signup(email, password);
-      setShowChoices(true);
+      
+      // Wait a moment to ensure the session is established
+      setTimeout(() => {
+        // Check if we have a session before showing choices
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            console.log("Session established after signup, showing choices");
+            setShowChoices(true);
+          } else {
+            console.error("No session after signup");
+            setError("Signup successful but couldn't establish a session. Please try logging in.");
+          }
+        });
+      }, 500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
     }

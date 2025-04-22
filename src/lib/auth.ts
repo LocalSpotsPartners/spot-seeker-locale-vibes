@@ -32,15 +32,22 @@ export const login = async (email: string, password: string): Promise<User> => {
 };
 
 // Signup function
-export const signup = async (name: string, email: string, password: string): Promise<User> => {
+export const signup = async (email: string, password: string): Promise<User> => {
+  // First check if a user with this email already exists
+  const { data: existingUsers, error: checkError } = await supabase
+    .from('user_access')
+    .select('user_id')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (checkError) {
+    console.error("Error checking existing user:", checkError);
+  } 
+
+  // Sign up the user
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: {
-      data: {
-        name,
-      },
-    },
   });
 
   if (error) {
@@ -53,10 +60,13 @@ export const signup = async (name: string, email: string, password: string): Pro
 
   const user: User = {
     id: data.user.id,
-    name: name,
+    name: data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
     avatar: data.user.user_metadata.avatar_url,
   };
+
+  // Log the successful signup for debugging
+  console.log("User signed up successfully:", user.id);
 
   return user;
 };

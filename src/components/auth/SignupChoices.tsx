@@ -15,32 +15,54 @@ export function SignupChoices() {
   });
   const [userId, setUserId] = useState<string | null>(null);
 
-  // Check for authenticated user on component mount
+  // Check for authenticated user on component mount and whenever the component is shown
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id) {
-        setUserId(session.user.id);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user?.id) {
+          console.log("User authenticated in SignupChoices:", session.user.id);
+          setUserId(session.user.id);
+        } else {
+          console.log("No active session found in SignupChoices");
+        }
+      } catch (error) {
+        console.error("Error checking auth in SignupChoices:", error);
       }
     };
     
     checkAuth();
+    
+    // Also listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user?.id) {
+        console.log("Auth state changed in SignupChoices:", session.user.id);
+        setUserId(session.user.id);
+      } else {
+        setUserId(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const startFreeTrial = async () => {
     try {
       setIsLoading({...isLoading, trial: true});
       
-      // If we don't have userId yet, get it again
-      let currentUserId = userId;
+      // Get the current session to make sure we have the latest user info
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id || userId;
+      
       if (!currentUserId) {
-        const { data: { session } } = await supabase.auth.getSession();
-        currentUserId = session?.user?.id;
-        if (!currentUserId) {
-          throw new Error("No user found. Please try logging in again.");
-        }
+        console.error("No user ID available for free trial");
+        throw new Error("No user found. Please try logging in again.");
       }
 
+      console.log("Starting free trial for user:", currentUserId);
+      
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -51,7 +73,10 @@ export function SignupChoices() {
         })
         .eq('user_id', currentUserId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating user_access:", error);
+        throw error;
+      }
 
       toast.success("Free trial activated!");
       navigate('/');
@@ -67,11 +92,15 @@ export function SignupChoices() {
     try {
       setIsLoading({...isLoading, premium: true});
       
-      // Make sure we have a session before proceeding
+      // Get the current session to make sure we have the latest user info
       const { data: { session } } = await supabase.auth.getSession();
+      
       if (!session) {
+        console.error("No active session for premium upgrade");
         throw new Error("No active session. Please log in again.");
       }
+      
+      console.log("Creating payment for user:", session.user.id);
       
       const { data, error } = await supabase.functions.invoke('create-payment', {
         headers: {
@@ -88,6 +117,8 @@ export function SignupChoices() {
         console.error('No URL returned from payment function:', data);
         throw new Error('Failed to generate payment URL');
       }
+      
+      console.log("Payment URL generated, redirecting to:", data.url);
       
       // Redirect to Stripe checkout
       window.location.href = data.url;
