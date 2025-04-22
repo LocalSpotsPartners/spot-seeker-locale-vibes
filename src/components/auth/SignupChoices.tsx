@@ -14,29 +14,34 @@ export function SignupChoices() {
     premium: false
   });
   const [userId, setUserId] = useState<string | null>(null);
+  const [isSessionCheckComplete, setIsSessionCheckComplete] = useState(false);
 
   // Check for authenticated user on component mount and whenever the component is shown
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("Checking for auth session in SignupChoices...");
         const { data: { session } } = await supabase.auth.getSession();
+        
         if (session?.user?.id) {
           console.log("User authenticated in SignupChoices:", session.user.id);
           setUserId(session.user.id);
         } else {
           console.log("No active session found in SignupChoices");
         }
+        setIsSessionCheckComplete(true);
       } catch (error) {
         console.error("Error checking auth in SignupChoices:", error);
+        setIsSessionCheckComplete(true);
       }
     };
     
     checkAuth();
     
     // Also listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state change in SignupChoices:", event, session?.user?.id);
       if (session?.user?.id) {
-        console.log("Auth state changed in SignupChoices:", session.user.id);
         setUserId(session.user.id);
       } else {
         setUserId(null);
@@ -52,30 +57,65 @@ export function SignupChoices() {
     try {
       setIsLoading({...isLoading, trial: true});
       
-      // Get the current session to make sure we have the latest user info
-      const { data: { session } } = await supabase.auth.getSession();
-      const currentUserId = session?.user?.id || userId;
-      
-      if (!currentUserId) {
-        console.error("No user ID available for free trial");
-        throw new Error("No user found. Please try logging in again.");
+      // Check if we have a userId from state
+      if (!userId) {
+        // Try to get the current session again
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user?.id) {
+          console.error("No authenticated user found for free trial");
+          throw new Error("You need to be logged in to start the free trial. Please log in and try again.");
+        }
+        
+        setUserId(session.user.id);
       }
 
-      console.log("Starting free trial for user:", currentUserId);
+      console.log("Starting free trial for user:", userId);
       
+      // Create tomorrow's date for trial end
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const { error } = await supabase
+      // Check if the user already exists in user_access
+      const { data: existingAccess, error: checkError } = await supabase
         .from('user_access')
-        .update({
-          trial_end: tomorrow.toISOString(),
-        })
-        .eq('user_id', currentUserId);
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("Error checking user access:", checkError);
+        throw new Error("Error checking user access");
+      }
+      
+      let updateError;
+      
+      if (existingAccess) {
+        // Update existing record
+        const { error } = await supabase
+          .from('user_access')
+          .update({
+            trial_end: tomorrow.toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+        
+        updateError = error;
+      } else {
+        // Insert new record
+        const { error } = await supabase
+          .from('user_access')
+          .insert({
+            user_id: userId,
+            trial_end: tomorrow.toISOString(),
+          });
+        
+        updateError = error;
+      }
 
-      if (error) {
-        console.error("Error updating user_access:", error);
-        throw error;
+      if (updateError) {
+        console.error("Error updating user_access:", updateError);
+        throw updateError;
       }
 
       toast.success("Free trial activated!");
@@ -92,7 +132,7 @@ export function SignupChoices() {
     try {
       setIsLoading({...isLoading, premium: true});
       
-      // Get the current session to make sure we have the latest user info
+      // Get the current session
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -128,6 +168,15 @@ export function SignupChoices() {
       setIsLoading({...isLoading, premium: false});
     }
   };
+
+  // Show loading state until session check is complete
+  if (!isSessionCheckComplete) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-locale-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

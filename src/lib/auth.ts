@@ -48,6 +48,10 @@ export const signup = async (email: string, password: string): Promise<User> => 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      // Adding this explicit option to store the session
+      emailRedirectTo: `${window.location.origin}/login`,
+    }
   });
 
   if (error) {
@@ -58,11 +62,12 @@ export const signup = async (email: string, password: string): Promise<User> => 
     throw new Error("No user data returned");
   }
 
+  // Explicitly set avatar to null to avoid type inference issues
   const user: User = {
     id: data.user.id,
     name: data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: null,  // Simplified this to avoid potential type inference issues
+    avatar: null,
   };
 
   // Log the successful signup for debugging
