@@ -4,9 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
 import { SignupChoices } from './SignupChoices';
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
 interface SignupFormProps {
   onToggleForm: () => void;
@@ -19,57 +17,34 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
   const [showChoices, setShowChoices] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
-  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-    
     try {
-      // Sign up the user
       await signup(email, password);
-      
-      console.log("Signup successful, checking for session...");
-      
-      // Check for session with retry
-      let attempts = 0;
-      const maxAttempts = 5; // Increased from 3 to 5
-      const checkSession = async () => {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("Session established after signup, showing choices");
-          setShowChoices(true);
-          setIsLoading(false);
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          console.log(`No session yet, retrying... (Attempt ${attempts}/${maxAttempts})`);
-          setTimeout(checkSession, 1500); // Increased from 1000ms to 1500ms
-        } else {
-          console.error("Failed to establish session after multiple attempts");
-          toast.success("Signup successful! Please proceed to login.");
-          setError(null);
-          setIsLoading(false);
-          // Redirect to login instead of showing an error
-          setTimeout(() => {
-            onToggleForm();
-          }, 2000);
-        }
-      };
-      
-      // Start checking for session with a slight delay
-      setTimeout(checkSession, 1500);
-      
+      toast.success("Signup successful! Please check your email to confirm your account before you can log in.");
+      setShowChoices(true);
     } catch (err) {
-      console.error("Signup error:", err);
       setError(err instanceof Error ? err.message : 'Failed to sign up');
+    } finally {
       setIsLoading(false);
     }
   };
 
   if (showChoices) {
-    return <SignupChoices />;
+    // Add notice about email confirmation
+    return (
+      <div>
+        <SignupChoices />
+        <div className="mt-6 bg-blue-100 text-blue-700 p-4 rounded text-center">
+          Please check your email to confirm your account before using Locale Spots.
+          <br />
+          After confirming, come back to login!
+        </div>
+      </div>
+    );
   }
 
   return (
