@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Star, Share2, Mail, MessageSquare, whatsapp } from "lucide-react";
+import { Star, Share2, Mail, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
@@ -49,9 +49,6 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
           break;
         case 'sms':
           window.location.href = `sms:?body=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
-          break;
-        case 'whatsapp':
-          window.location.href = `whatsapp://send?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
           break;
       }
       return;
@@ -131,10 +128,6 @@ export function PlaceCard({ place, onMouseEnter, onMouseLeave }: PlaceCardProps)
               <DropdownMenuItem onClick={(e) => handleShare(e, 'sms')}>
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Message
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => handleShare(e, 'whatsapp')}>
-                <whatsapp className="mr-2 h-4 w-4" />
-                WhatsApp
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
