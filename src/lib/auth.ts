@@ -62,12 +62,12 @@ export const signup = async (email: string, password: string): Promise<User> => 
     throw new Error("No user data returned");
   }
 
-  // Define user with explicit type
+  // Define user with explicit type and avoid deep type instantiation
   const user: User = {
     id: data.user.id,
     name: data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: null, // Using null explicitly to avoid type inference issues
+    avatar: null,
   };
 
   // Log the successful signup for debugging

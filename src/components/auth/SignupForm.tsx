@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { SignupChoices } from './SignupChoices';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface SignupFormProps {
   onToggleForm: () => void;
@@ -18,6 +19,7 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
   const [showChoices, setShowChoices] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
       
       // Check for session with retry
       let attempts = 0;
-      const maxAttempts = 3;
+      const maxAttempts = 5; // Increased from 3 to 5
       const checkSession = async () => {
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -43,16 +45,21 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
         } else if (attempts < maxAttempts) {
           attempts++;
           console.log(`No session yet, retrying... (Attempt ${attempts}/${maxAttempts})`);
-          setTimeout(checkSession, 1000); // Wait 1 second before retrying
+          setTimeout(checkSession, 1500); // Increased from 1000ms to 1500ms
         } else {
           console.error("Failed to establish session after multiple attempts");
-          setError("Signup successful but couldn't establish a session. Please try logging in.");
+          toast.success("Signup successful! Please proceed to login.");
+          setError(null);
           setIsLoading(false);
+          // Redirect to login instead of showing an error
+          setTimeout(() => {
+            onToggleForm();
+          }, 2000);
         }
       };
       
-      // Start checking for session
-      setTimeout(checkSession, 1000);
+      // Start checking for session with a slight delay
+      setTimeout(checkSession, 1500);
       
     } catch (err) {
       console.error("Signup error:", err);
