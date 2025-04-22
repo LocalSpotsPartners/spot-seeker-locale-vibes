@@ -62,7 +62,7 @@ export const signup = async (email: string, password: string): Promise<User> => 
     id: data.user.id,
     name: data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: data.user.user_metadata.avatar_url,
+    avatar: null,  // Simplified this to avoid potential type inference issues
   };
 
   // Log the successful signup for debugging
@@ -77,8 +77,6 @@ export const socialLogin = async (provider: 'google' | 'apple'): Promise<void> =
     console.log(`Attempting to login with ${provider}...`);
     
     // Use correct redirect URL based on the current environment
-    // For the production build, we use the current origin
-    // The /login path will handle the OAuth callback
     const redirectTo = `${window.location.origin}/login`;
     
     console.log(`Setting redirect URL to: ${redirectTo}`);
@@ -126,7 +124,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     id: user.id,
     name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
-    avatar: user.user_metadata.avatar_url,
+    avatar: user.user_metadata.avatar_url || null,
   };
 };
 
