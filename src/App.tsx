@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,6 +17,8 @@ import NotFound from "./pages/NotFound";
 import WishlistPage from "./pages/WishlistPage";
 import ProfilePage from "./pages/ProfilePage";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { AccessCheck } from "@/components/auth/AccessCheck";
+import { PaymentSuccess } from "@/components/auth/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -43,13 +44,21 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/" 
-        element={isAuthenticated ? <Home /> : <Navigate to="/login" replace />} 
+        element={isAuthenticated ? (
+          <AccessCheck>
+            <Home />
+          </AccessCheck>
+        ) : (
+          <Navigate to="/login" replace />
+        )} 
       />
       <Route 
         path="/map" 
         element={
           <ProtectedRoute>
-            <MapPage />
+            <AccessCheck>
+              <MapPage />
+            </AccessCheck>
           </ProtectedRoute>
         } 
       />
@@ -57,17 +66,22 @@ const AppRoutes = () => {
         path="/place/:id" 
         element={
           <ProtectedRoute>
-            <PlaceDetailPage />
+            <AccessCheck>
+              <PlaceDetailPage />
+            </AccessCheck>
           </ProtectedRoute>
         } 
       />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/signup" element={<AuthPage />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route 
         path="/wishlist" 
         element={
           <ProtectedRoute>
-            <WishlistPage />
+            <AccessCheck>
+              <WishlistPage />
+            </AccessCheck>
           </ProtectedRoute>
         } 
       />
@@ -75,7 +89,9 @@ const AppRoutes = () => {
         path="/profile" 
         element={
           <ProtectedRoute>
-            <ProfilePage />
+            <AccessCheck>
+              <ProfilePage />
+            </AccessCheck>
           </ProtectedRoute>
         } 
       />
