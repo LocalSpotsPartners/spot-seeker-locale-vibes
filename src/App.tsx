@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -89,9 +90,8 @@ const AppRoutes = () => {
         path="/profile" 
         element={
           <ProtectedRoute>
-            <AccessCheck>
-              <ProfilePage />
-            </AccessCheck>
+            {/* Profile page is NOT wrapped in AccessCheck so users can always access their profile to sign out */}
+            <ProfilePage />
           </ProtectedRoute>
         } 
       />

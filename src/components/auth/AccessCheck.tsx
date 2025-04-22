@@ -32,7 +32,7 @@ export function AccessCheck({ children }: { children: React.ReactNode }) {
 
   const handleUpgrade = async () => {
     try {
-      const { data: { data, error } } = await supabase.functions.invoke('create-payment');
+      const { data, error } = await supabase.functions.invoke('create-payment');
       if (error) throw error;
       if (data?.url) {
         window.location.href = data.url;
@@ -57,9 +57,15 @@ export function AccessCheck({ children }: { children: React.ReactNode }) {
                 Your trial has expired. Upgrade to premium to continue accessing all features.
               </DialogDescription>
             </DialogHeader>
-            <Button onClick={handleUpgrade} className="w-full">
+            <Button onClick={handleUpgrade} className="w-full mb-2">
               Upgrade to Premium (€5)
             </Button>
+            {/* This button is outside the blurred area and can be accessed even when trial expires */}
+            <div className="text-center">
+              <Button variant="ghost" size="sm" onClick={() => setShowDialog(false)}>
+                Maybe later
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
       </>
