@@ -36,7 +36,7 @@ export const signup = async (
   email: string, 
   password: string, 
   metadata?: { name: string; firstName: string; lastName: string }
-): Promise<User> => {
+): Promise<void> => {
   // First check if a user with this email already exists
   const { data: existingUsers, error: checkError } = await supabase
     .from('user_access')
@@ -49,11 +49,10 @@ export const signup = async (
   } 
 
   // Sign up the user
-  const { data, error } = await supabase.auth.signUp({
-    email,
+  const { data, error } = await supabase.auth.signUp({ 
+    email, 
     password,
     options: {
-      // Adding metadata for the user
       data: metadata,
       // Adding this explicit option to store the session
       emailRedirectTo: `${window.location.origin}/login?type=signup`,
@@ -68,20 +67,8 @@ export const signup = async (
     throw new Error("No user data returned");
   }
 
-  // Create a properly typed user object with explicit null for avatar
-  const user: User = {
-    id: data.user.id,
-    name: metadata?.name || data.user.email?.split('@')[0] || 'User',
-    email: data.user.email || '',
-    avatar: null, // Explicitly setting avatar to null to fix type issue
-    firstName: metadata?.firstName,
-    lastName: metadata?.lastName
-  };
-
   // Log the successful signup for debugging
-  console.log("User signed up successfully:", user.id);
-
-  return user;
+  console.log("User signed up successfully:", data.user.id);
 };
 
 // Social login function
