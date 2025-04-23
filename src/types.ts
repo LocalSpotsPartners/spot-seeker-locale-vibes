@@ -3,8 +3,10 @@ export type User = {
   id: string;
   name: string;
   email: string;
-  avatar?: string;
-  provider?: 'google' | 'apple';
+  avatar: string | null;
+  provider?: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 export type PlaceFeature = 

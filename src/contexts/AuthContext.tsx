@@ -3,7 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { AuthChangeEvent } from "@supabase/supabase-js";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 type AuthContextType = {
   user: User | null;
@@ -11,7 +11,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, metadata?: { name: string; firstName: string; lastName: string }) => Promise<void>;
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   subscription: {
     isPremium: boolean;
@@ -46,8 +46,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
+          // Only show error if not right after signup
           if (event !== 'SIGNED_UP' as AuthChangeEvent) {
-            // Only show error if not right after signup
             toast.error("Please confirm your email before logging in.");
             supabase.auth.signOut();
           }
@@ -115,11 +115,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signup = async (email: string, password: string) => {
+  const signup = async (
+    email: string, 
+    password: string, 
+    metadata?: { name: string; firstName: string; lastName: string }
+  ) => {
     const { error } = await supabase.auth.signUp({ 
       email, 
       password,
       options: {
+        data: metadata,
         emailRedirectTo: `${window.location.origin}/login`,
       }
     });

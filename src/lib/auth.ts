@@ -31,8 +31,12 @@ export const login = async (email: string, password: string): Promise<User> => {
   return user;
 };
 
-// Signup function
-export const signup = async (email: string, password: string): Promise<User> => {
+// Signup function with metadata for name
+export const signup = async (
+  email: string, 
+  password: string, 
+  metadata?: { name: string; firstName: string; lastName: string }
+): Promise<User> => {
   // First check if a user with this email already exists
   const { data: existingUsers, error: checkError } = await supabase
     .from('user_access')
@@ -49,6 +53,8 @@ export const signup = async (email: string, password: string): Promise<User> => 
     email,
     password,
     options: {
+      // Adding metadata for the user
+      data: metadata,
       // Adding this explicit option to store the session
       emailRedirectTo: `${window.location.origin}/login`,
     }
@@ -65,7 +71,7 @@ export const signup = async (email: string, password: string): Promise<User> => 
   // Fix: Create a properly typed user object with explicit null for avatar
   const user: User = {
     id: data.user.id,
-    name: data.user.email?.split('@')[0] || 'User',
+    name: metadata?.name || data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
     avatar: null, // Explicitly setting avatar to null to avoid type instantiation issues
   };

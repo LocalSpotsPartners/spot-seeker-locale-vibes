@@ -15,6 +15,7 @@ export function SignupChoices() {
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [isSessionCheckComplete, setIsSessionCheckComplete] = useState(false);
+  const [showVerificationMessage, setShowVerificationMessage] = useState(true);
 
   // Check for authenticated user on component mount and whenever the component is shown
   useEffect(() => {
@@ -25,9 +26,20 @@ export function SignupChoices() {
         
         if (session?.user?.id) {
           console.log("User authenticated in SignupChoices:", session.user.id);
-          setUserId(session.user.id);
+          
+          // Check if email is confirmed
+          const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
+          if (!emailConfirmed) {
+            console.log("Email not confirmed for user:", session.user.email);
+            setShowVerificationMessage(true);
+          } else {
+            console.log("Email confirmed for user:", session.user.email);
+            setShowVerificationMessage(false);
+            setUserId(session.user.id);
+          }
         } else {
           console.log("No active session found in SignupChoices");
+          setShowVerificationMessage(true);
         }
         setIsSessionCheckComplete(true);
       } catch (error) {
@@ -42,9 +54,18 @@ export function SignupChoices() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state change in SignupChoices:", event, session?.user?.id);
       if (session?.user?.id) {
-        setUserId(session.user.id);
+        // Check if email is confirmed on auth state change
+        const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
+        if (emailConfirmed) {
+          setShowVerificationMessage(false);
+          setUserId(session.user.id);
+        } else {
+          setShowVerificationMessage(true);
+          setUserId(null);
+        }
       } else {
         setUserId(null);
+        setShowVerificationMessage(true);
       }
     });
 
@@ -174,6 +195,27 @@ export function SignupChoices() {
     return (
       <div className="flex justify-center items-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-locale-500"></div>
+      </div>
+    );
+  }
+
+  // Show verification message if email is not verified
+  if (showVerificationMessage) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-blue-100 text-blue-700 p-6 rounded-lg text-center">
+          <h2 className="text-xl font-bold mb-4">Email Verification Required</h2>
+          <p className="mb-2">Please check your email inbox and verify your account before continuing.</p>
+          <p className="text-sm">Didn't receive the verification email? Check your spam folder or try signing up again.</p>
+          
+          <Button 
+            onClick={() => navigate('/login')}
+            className="mt-4"
+            variant="outline"
+          >
+            Return to Login
+          </Button>
+        </div>
       </div>
     );
   }
