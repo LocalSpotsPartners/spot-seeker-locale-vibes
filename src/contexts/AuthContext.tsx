@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { User } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { AuthChangeEvent } from "@supabase/supabase-js";
 
 type AuthContextType = {
   user: User | null;
@@ -45,7 +46,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
-          if (event !== 'SIGNED_UP') {
+          if (event !== 'SIGNED_UP' as AuthChangeEvent) {
             // Only show error if not right after signup
             toast.error("Please confirm your email before logging in.");
             supabase.auth.signOut();
