@@ -8,49 +8,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-PAYMENT] ${step}${detailsStr}`);
-};
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  logStep("Function started");
-
   const supabaseClient = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
   );
 
   try {
-    // Extract the authorization token from the request headers
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("Error - Missing Authorization header");
-      throw new Error("Missing Authorization header");
-    }
-    
+    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    logStep("Attempting to get user with token");
+    const { data: { user } } = await supabaseClient.auth.getUser(token);
     
-    // Get the user from the auth token
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    
-    if (userError) {
-      logStep("Auth error", userError);
-      throw new Error("Authentication error: " + userError.message);
-    }
-    
-    const user = userData.user;
-    if (!user?.email) {
-      logStep("Error - User not authenticated or email not available");
-      throw new Error("User not authenticated or email not available");
-    }
-    
-    logStep("User authenticated", { email: user.email, id: user.id });
+    if (!user?.email) throw new Error("User not authenticated");
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -61,13 +34,8 @@ serve(async (req) => {
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      logStep("Existing customer found", { customerId });
-    } else {
-      logStep("No existing customer found, creating new one");
     }
 
-    logStep("Creating checkout session");
-    
     // Create checkout session for one-time payment
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -90,16 +58,12 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/`,
     });
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
-    
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    const errorMsg = error instanceof Error ? error.message : String(error);
-    logStep("Error in create-payment", { error: errorMsg });
-    return new Response(JSON.stringify({ error: errorMsg }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

@@ -2,16 +2,16 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
+// Updated type to include new properties
 type AuthContextType = {
   user: User | null;
   isAuthenticated: boolean;
-  isLoading: boolean;
+  isLoading: boolean;  // Added isLoading
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  signup: (email: string, password: string, metadata?: { name: string; firstName: string; lastName: string }) => Promise<void>;
+  signup: (email: string, password: string) => Promise<void>;
+  // Added new properties for subscription and social login
   socialLogin: (provider: 'google' | 'apple') => Promise<void>;
   subscription: {
     isPremium: boolean;
@@ -26,10 +26,12 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Initialize all state hooks at the top level - not conditionally
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Initialize with default subscription state
   const [subscription, setSubscription] = useState({
     isPremium: false,
     isTrialActive: false,
@@ -38,33 +40,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     setIsLoading(true);
-
+    
+    // Listen for auth changes
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state changed:", event, session?.user?.id);
-      
+      console.log("Auth state changed:", event, session);
       if (session) {
-        const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
-        if (!emailConfirmed) {
-          console.log("Email not confirmed for user:", session.user.email);
-          setUser(null);
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          // Only show error if not right after signup
-          if (event !== 'SIGNED_UP' as AuthChangeEvent) {
-            toast.error("Please confirm your email before logging in.");
-            supabase.auth.signOut();
-          }
-          return;
-        }
-        
-        console.log("Email confirmed for user:", session.user.email);
         setUser({
           id: session.user.id,
           name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           avatar: session.user.user_metadata.avatar_url,
-          firstName: session.user.user_metadata.firstName,
-          lastName: session.user.user_metadata.lastName
         });
         setIsAuthenticated(true);
       } else {
@@ -74,26 +59,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     });
 
+    // Initial check for existing session
     const checkSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log("Initial session check:", session);
+        
         if (session) {
-          const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
-          if (!emailConfirmed) {
-            console.log("Email not confirmed during session check:", session.user.email);
-            setUser(null);
-            setIsAuthenticated(false);
-            return;
-          }
-          
-          console.log("Session check: Email confirmed for user:", session.user.email);
           setUser({
             id: session.user.id,
             name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             avatar: session.user.user_metadata.avatar_url,
-            firstName: session.user.user_metadata.firstName,
-            lastName: session.user.user_metadata.lastName
           });
           setIsAuthenticated(true);
         }
@@ -106,37 +83,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     checkSession();
 
+    // Cleanup subscription
     return () => {
       data?.subscription.unsubscribe();
     };
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    
-    if (data.user) {
-      const emailConfirmed = data.user.email_confirmed_at || data.user.confirmed_at;
-      if (!emailConfirmed) {
-        toast.error("Please confirm your email before logging in.");
-        await supabase.auth.signOut();
-        throw new Error("Email not confirmed. Please check your inbox.");
-      }
-    }
   };
 
-  const signup = async (
-    email: string, 
-    password: string, 
-    metadata?: { name: string; firstName: string; lastName: string }
-  ) => {
+  const signup = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ 
       email, 
-      password,
-      options: {
-        data: metadata,
-        emailRedirectTo: `${window.location.origin}/login?type=signup`,
-      }
+      password 
     });
     if (error) throw error;
   };
@@ -155,7 +116,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  // Placeholder implementations for subscription methods
   const activateTrial = async () => {
+    // TODO: Implement actual trial activation logic
     setSubscription(prev => ({
       ...prev,
       isTrialActive: true,
@@ -164,6 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const upgradeToPremium = async () => {
+    // TODO: Implement actual premium upgrade logic
     setSubscription(prev => ({
       ...prev,
       isPremium: true,
@@ -172,6 +136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const cancelPremium = async () => {
+    // TODO: Implement actual premium cancellation logic
     setSubscription(prev => ({
       ...prev,
       isPremium: false

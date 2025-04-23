@@ -25,38 +25,22 @@ export const login = async (email: string, password: string): Promise<User> => {
     id: data.user.id,
     name: data.user.user_metadata.name || data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: data.user.user_metadata.avatar_url || null,
+    avatar: data.user.user_metadata.avatar_url,
   };
 
   return user;
 };
 
-// Signup function with metadata for name
-export const signup = async (
-  email: string, 
-  password: string, 
-  metadata?: { name: string; firstName: string; lastName: string }
-): Promise<void> => {
-  // First check if a user with this email already exists
-  const { data: existingUsers, error: checkError } = await supabase
-    .from('user_access')
-    .select('user_id')
-    .eq('email', email)
-    .maybeSingle();
-
-  if (checkError) {
-    console.error("Error checking existing user:", checkError);
-  } 
-
-  // Sign up the user
-  const { data, error } = await supabase.auth.signUp({ 
-    email, 
+// Signup function
+export const signup = async (name: string, email: string, password: string): Promise<User> => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
     password,
     options: {
-      data: metadata,
-      // Adding this explicit option to store the session
-      emailRedirectTo: `${window.location.origin}/login?type=signup`,
-    }
+      data: {
+        name,
+      },
+    },
   });
 
   if (error) {
@@ -67,8 +51,14 @@ export const signup = async (
     throw new Error("No user data returned");
   }
 
-  // Log the successful signup for debugging
-  console.log("User signed up successfully:", data.user.id);
+  const user: User = {
+    id: data.user.id,
+    name: name,
+    email: data.user.email || '',
+    avatar: data.user.user_metadata.avatar_url,
+  };
+
+  return user;
 };
 
 // Social login function
@@ -77,6 +67,8 @@ export const socialLogin = async (provider: 'google' | 'apple'): Promise<void> =
     console.log(`Attempting to login with ${provider}...`);
     
     // Use correct redirect URL based on the current environment
+    // For the production build, we use the current origin
+    // The /login path will handle the OAuth callback
     const redirectTo = `${window.location.origin}/login`;
     
     console.log(`Setting redirect URL to: ${redirectTo}`);
@@ -124,9 +116,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
     id: user.id,
     name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
-    avatar: user.user_metadata.avatar_url || null,
-    firstName: user.user_metadata.firstName || null,
-    lastName: user.user_metadata.lastName || null
+    avatar: user.user_metadata.avatar_url,
   };
 };
 

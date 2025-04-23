@@ -1,30 +1,14 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { SignupChoices } from "@/components/auth/SignupChoices";
 
 export default function AuthPage() {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [showVerification, setShowVerification] = useState(false);
-  
-  // Check if we have a verification code in the URL
-  useEffect(() => {
-    // This parameter will be present if this page is loaded as a result of clicking a verification link
-    const type = searchParams.get('type');
-    console.log("Auth page loaded with type:", type);
-    
-    if (type === 'signup' || type === 'recovery' || type === 'invite') {
-      setShowVerification(true);
-      // Show toast message for verification
-      toast.success("Thank you for verifying your email!");
-    }
-  }, [searchParams]);
   
   // Handle OAuth callback
   useEffect(() => {
@@ -52,37 +36,20 @@ export default function AuthPage() {
     handleOAuthCallback();
   }, [navigate]);
   
-  // Redirect to home if already authenticated (unless showing verification)
+  // Redirect to home if already authenticated
   useEffect(() => {
-    if (!isLoading && isAuthenticated && !showVerification) {
-      console.log("User is authenticated and not in verification flow, redirecting to home");
+    if (!isLoading && isAuthenticated) {
+      console.log("User is authenticated, redirecting to home");
       navigate("/", { replace: true });
     } else {
-      console.log("Auth status:", { isAuthenticated, isLoading, showVerification });
+      console.log("Auth status:", { isAuthenticated, isLoading });
     }
-  }, [isAuthenticated, navigate, isLoading, showVerification]);
+  }, [isAuthenticated, navigate, isLoading]);
   
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-locale-500"></div>
-      </div>
-    );
-  }
-
-  // If we're showing the verification success message
-  if (showVerification) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="bg-locale-500 p-6 text-white text-center">
-            <h2 className="text-2xl font-bold">Locale Spots</h2>
-            <p className="mt-1">Choose Your Plan</p>
-          </div>
-          <div className="p-6">
-            <SignupChoices />
-          </div>
-        </div>
       </div>
     );
   }

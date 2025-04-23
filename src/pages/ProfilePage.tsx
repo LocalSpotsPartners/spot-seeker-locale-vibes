@@ -8,21 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { LogOut, Settings } from "lucide-react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function ProfilePage() {
   const { user, logout } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
 
   if (!user) {
     return (
@@ -36,10 +25,6 @@ export default function ProfilePage() {
       </Layout>
     );
   }
-
-  // Extract first name and last name from metadata if available
-  const firstName = user.firstName || user.name.split(' ')[0];
-  const lastName = user.lastName || user.name.split(' ').slice(1).join(' ');
 
   return (
     <Layout>
@@ -66,14 +51,6 @@ export default function ProfilePage() {
                 </div>
               </div>
             </CardHeader>
-            {(firstName || lastName) && (
-              <CardContent className="border-t pt-4">
-                <div className="flex flex-col space-y-1">
-                  {firstName && <p className="text-sm"><span className="font-medium">First Name:</span> {firstName}</p>}
-                  {lastName && <p className="text-sm"><span className="font-medium">Last Name:</span> {lastName}</p>}
-                </div>
-              </CardContent>
-            )}
           </Card>
           
           {/* Account Settings */}
@@ -104,7 +81,7 @@ export default function ProfilePage() {
               <Button 
                 variant="destructive" 
                 className="flex items-center gap-2"
-                onClick={handleLogout}
+                onClick={logout}
               >
                 <LogOut className="h-4 w-4" />
                 <span>Sign out</span>
