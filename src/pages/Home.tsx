@@ -4,13 +4,11 @@ import { Layout } from "@/components/layout/Layout";
 import { PlaceGrid } from "@/components/places/PlaceGrid";
 import { FeatureFilter } from "@/components/places/FeatureFilter";
 import { PlaceFeature, Place } from "@/types";
-import { Map, Search } from "lucide-react";
+import { Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { MapView } from "@/components/map/MapView";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useMediaQuery } from "@react-hook/media-query";
 
 export default function Home() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -18,11 +16,18 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [showMobileMap, setShowMobileMap] = useState(false);
   const [hoveredPlace, setHoveredPlace] = useState<Place | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false);
-  
-  // Remove mapBounds state since we don't want to filter based on map bounds
-  
+
+  // For filtering based on map bounds (desktop only)
+  const [mapBounds, setMapBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
+
+  // Custom media query hook to determine desktop vs mobile
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+
   useEffect(() => {
     const loadPlaces = async () => {
       try {
@@ -59,66 +64,51 @@ export default function Home() {
     loadPlaces();
   }, []);
 
-  // Compute suggestions for search
-  const searchSuggestions = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    
-    const lowercaseQuery = searchQuery.toLowerCase();
-    
-    // Get unique neighborhoods
-    const neighborhoodSuggestions = Array.from(
-      new Set(places.map(p => p.neighborhood).filter(Boolean))
-    )
-      .filter(neighborhood => 
-        neighborhood?.toLowerCase().includes(lowercaseQuery)
-      )
-      .map(neighborhood => ({
-        type: 'neighborhood',
-        value: neighborhood || ''
-      }));
-    
-    // Get place names
-    const nameSuggestions = places
-      .filter(p => p.name.toLowerCase().includes(lowercaseQuery))
-      .map(p => ({
-        type: 'name',
-        value: p.name
-      }));
-
-    // Return only neighborhood and name suggestions
-    return [...neighborhoodSuggestions, ...nameSuggestions].slice(0, 5);
-  }, [places, searchQuery]);
-  
+  // Filter places by features and (if desktop) map bounds
   const filteredPlaces = useMemo(() => {
-    return places.filter(place => {
+    let filtered = places.filter(place => {
       // Feature filter
       const matchesFeatures = selectedFeatures.length === 0 || selectedFeatures.every(feature => place.features.includes(feature));
-
-      // Search query filter - only filter by name and neighborhood
-      const matchesSearch = !searchQuery || 
-        place.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (place.neighborhood && place.neighborhood.toLowerCase().includes(searchQuery.toLowerCase()));
-        
-      return matchesFeatures && matchesSearch;
+      return matchesFeatures;
     });
-  }, [places, selectedFeatures, searchQuery]);
-  
-  // Remove the filtering by map bounds by making this function empty
-  const handleMapViewportChange = () => {
-    // We no longer use this to filter places
-    console.log("Map viewport changed, but not filtering places by bounds");
+
+    if (
+      isDesktop &&
+      mapBounds &&
+      !showMobileMap // Only filter when map is visible on desktop
+    ) {
+      filtered = filtered.filter(place => {
+        if (!place.location || place.location.lat === 0 || place.location.lng === 0) return false;
+        return (
+          place.location.lat <= mapBounds.north &&
+          place.location.lat >= mapBounds.south &&
+          place.location.lng >= mapBounds.west &&
+          place.location.lng <= mapBounds.east
+        );
+      });
+    }
+
+    return filtered;
+  }, [places, selectedFeatures, mapBounds, isDesktop, showMobileMap]);
+
+  // Receive new map bounds on desktop view and update state
+  const handleMapViewportChange = (bounds?: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  }) => {
+    if (isDesktop && !showMobileMap && bounds) {
+      setMapBounds(bounds);
+    }
   };
-  
+
   const handlePlaceHover = (place: Place | null) => {
     setHoveredPlace(place);
   };
-  
-  const handleSearchSelection = (value: string) => {
-    setSearchQuery(value);
-    setSearchOpen(false);
-  };
-  
-  return <Layout>
+
+  return (
+    <Layout>
       <div className="container py-8 pb-20 md:py-8">
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -128,61 +118,6 @@ export default function Home() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input 
-                type="text" 
-                placeholder="Search by name or neighborhood..." 
-                value={searchQuery} 
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  if (e.target.value.trim() !== '') {
-                    setSearchOpen(true);
-                  } else {
-                    setSearchOpen(false);
-                  }
-                }}
-                onClick={() => {
-                  if (searchQuery.trim() !== '') {
-                    setSearchOpen(true);
-                  }
-                }}
-                className="pl-9 md:text-base w-full" 
-              />
-              
-              {searchSuggestions.length > 0 && (
-                <Popover open={searchOpen} onOpenChange={setSearchOpen}>
-                  <PopoverTrigger asChild>
-                    <div className="w-full" />
-                  </PopoverTrigger>
-                  <PopoverContent className="p-0 w-[300px]" align="start">
-                    <Command>
-                      <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
-                        <CommandGroup>
-                          {searchSuggestions.map(suggestion => (
-                            <CommandItem 
-                              key={`${suggestion.type}-${suggestion.value}`} 
-                              onSelect={() => handleSearchSelection(suggestion.value)} 
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              {suggestion.type === 'neighborhood' ? 
-                                <Map className="h-4 w-4 text-gray-400" /> : 
-                                <Search className="h-4 w-4 text-gray-400" />
-                              }
-                              <span className="text-base">{suggestion.value}</span>
-                              <span className="text-xs text-gray-400 ml-auto">
-                                {suggestion.type === 'neighborhood' ? 'Neighborhood' : 'Place'}
-                              </span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
             <Button 
               variant="outline" 
               className="flex items-center gap-2 md:hidden" 
@@ -222,5 +157,6 @@ export default function Home() {
           </div>
         )}
       </div>
-    </Layout>;
+    </Layout>
+  );
 }
