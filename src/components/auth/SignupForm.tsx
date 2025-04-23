@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
-import { SignupChoices } from './SignupChoices';
 
 interface SignupFormProps {
   onToggleForm: () => void;
@@ -13,7 +12,6 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [showChoices, setShowChoices] = useState(false);
   const { signup } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,15 +20,10 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
     
     try {
       await signup(email, password);
-      setShowChoices(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
     }
   };
-
-  if (showChoices) {
-    return <SignupChoices />;
-  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,4 +1,5 @@
-import { useCallback, useState } from "react";
+
+import { useCallback, useState, useEffect } from "react";
 import { Place, Review } from "@/types";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -13,16 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ReviewList } from "../reviews/ReviewList";
 import { ReviewForm } from "../reviews/ReviewForm";
-import { MapPin, Star, Share2, Mail, MessageSquare } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface PlaceDetailProps {
   place: Place;
@@ -69,6 +64,7 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
       console.log("Supabase response:", data);
       
       if (data && data.length > 0) {
+        // Transform the response into a Review object
         const addedReview: Review = {
           id: data[0].id,
           placeId: data[0].place_id || '',
@@ -80,6 +76,9 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
           date: data[0].created_at || new Date().toISOString()
         };
         
+        console.log("Transformed review:", addedReview);
+        
+        // Add the new review to the beginning of localReviews
         setLocalReviews(prev => [addedReview, ...prev]);
         setShowForm(false);
         toast.success("Review submitted successfully");
@@ -93,37 +92,6 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
       setIsSubmitting(false);
     }
   }, [user, place.id]);
-  
-  const handleShare = async (method?: string) => {
-    const shareUrl = window.location.href;
-    const shareText = `Check out ${place.name}!`;
-    
-    if (method) {
-      switch (method) {
-        case 'email':
-          window.location.href = `mailto:?subject=${encodeURIComponent(shareText)}&body=${encodeURIComponent(shareUrl)}`;
-          break;
-        case 'sms':
-          window.location.href = `sms:?body=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
-          break;
-      }
-      return;
-    }
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: place.name,
-          text: shareText,
-          url: shareUrl,
-        });
-      } catch (error) {
-        if (error instanceof Error && error.name !== 'AbortError') {
-          toast.error("Failed to share");
-        }
-      }
-    }
-  };
   
   return (
     <div className="space-y-6">
@@ -161,38 +129,9 @@ export function PlaceDetail({ place, reviews: initialReviews }: PlaceDetailProps
         <CardContent className="p-6">
           <div className="flex justify-between items-start mb-4">
             <h1 className="text-2xl font-bold">{place.name}</h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center bg-yellow-100 px-2 py-1 rounded">
-                <Star className="h-5 w-5 fill-yellow-400 text-yellow-400 mr-1" />
-                <span className="font-medium">{place.rating.toFixed(1)}</span>
-              </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {navigator.share && (
-                    <DropdownMenuItem onClick={() => handleShare()}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      Share
-                    </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem onClick={() => handleShare('email')}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleShare('sms')}>
-                    <MessageSquare className="mr-2 h-4 w-4" />
-                    Message
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+            <div className="flex items-center bg-yellow-100 px-2 py-1 rounded">
+              <Star className="h-5 w-5 fill-yellow-400 text-yellow-400 mr-1" />
+              <span className="font-medium">{place.rating.toFixed(1)}</span>
             </div>
           </div>
           

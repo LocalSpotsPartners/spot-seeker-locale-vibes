@@ -89,42 +89,12 @@ export type Database = {
           },
         ]
       }
-      user_access: {
-        Row: {
-          created_at: string | null
-          has_premium: boolean | null
-          id: string
-          trial_end: string | null
-          updated_at: string | null
-          user_id: string
-        }
-        Insert: {
-          created_at?: string | null
-          has_premium?: boolean | null
-          id?: string
-          trial_end?: string | null
-          updated_at?: string | null
-          user_id: string
-        }
-        Update: {
-          created_at?: string | null
-          has_premium?: boolean | null
-          id?: string
-          trial_end?: string | null
-          updated_at?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      check_user_access: {
-        Args: { user_uid: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

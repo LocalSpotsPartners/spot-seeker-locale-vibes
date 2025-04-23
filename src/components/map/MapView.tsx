@@ -74,7 +74,7 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
 
   const { handleUserLocation } = useUserLocation(map, mapInitialized);
 
-  // Use viewport changes for filtering
+  // Still notify about viewport changes but don't use them for filtering
   if (map && mapInitialized && onViewportChange) {
     map.on('moveend', () => {
       const bounds = map.getBounds();
@@ -110,7 +110,7 @@ export function MapView({ places, selectedFeatures, hoveredPlace, onViewportChan
         onLocationClick={handleUserLocation}
         placesCount={filteredPlaces.filter(p => p.location && p.location.lat !== 0 && p.location.lng !== 0).length}
       />
-      <div ref={mapContainer} className="absolute inset-0" />
+      <div ref={mapContainer} className="absolute inset-0" style={{ width: '100%', height: '100%' }}/>
       {highlightedPlace && (
         <div className="absolute top-4 left-4 z-10">
           <HighlightedPlace place={highlightedPlace} />

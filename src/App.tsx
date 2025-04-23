@@ -18,8 +18,6 @@ import NotFound from "./pages/NotFound";
 import WishlistPage from "./pages/WishlistPage";
 import ProfilePage from "./pages/ProfilePage";
 import { BottomNav } from "@/components/layout/BottomNav";
-import { AccessCheck } from "@/components/auth/AccessCheck";
-import { PaymentSuccess } from "@/components/auth/PaymentSuccess";
 
 const queryClient = new QueryClient();
 
@@ -45,21 +43,13 @@ const AppRoutes = () => {
     <Routes>
       <Route 
         path="/" 
-        element={isAuthenticated ? (
-          <AccessCheck>
-            <Home />
-          </AccessCheck>
-        ) : (
-          <Navigate to="/login" replace />
-        )} 
+        element={isAuthenticated ? <Home /> : <Navigate to="/login" replace />} 
       />
       <Route 
         path="/map" 
         element={
           <ProtectedRoute>
-            <AccessCheck>
-              <MapPage />
-            </AccessCheck>
+            <MapPage />
           </ProtectedRoute>
         } 
       />
@@ -67,22 +57,17 @@ const AppRoutes = () => {
         path="/place/:id" 
         element={
           <ProtectedRoute>
-            <AccessCheck>
-              <PlaceDetailPage />
-            </AccessCheck>
+            <PlaceDetailPage />
           </ProtectedRoute>
         } 
       />
       <Route path="/login" element={<AuthPage />} />
       <Route path="/signup" element={<AuthPage />} />
-      <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route 
         path="/wishlist" 
         element={
           <ProtectedRoute>
-            <AccessCheck>
-              <WishlistPage />
-            </AccessCheck>
+            <WishlistPage />
           </ProtectedRoute>
         } 
       />
@@ -90,7 +75,6 @@ const AppRoutes = () => {
         path="/profile" 
         element={
           <ProtectedRoute>
-            {/* Profile page is NOT wrapped in AccessCheck so users can always access their profile to sign out */}
             <ProfilePage />
           </ProtectedRoute>
         } 
