@@ -40,9 +40,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user?.id);
+      
       if (session) {
         const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
         if (!emailConfirmed) {
+          console.log("Email not confirmed for user:", session.user.email);
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
@@ -53,11 +56,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           return;
         }
+        
+        console.log("Email confirmed for user:", session.user.email);
         setUser({
           id: session.user.id,
           name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
           email: session.user.email || '',
           avatar: session.user.user_metadata.avatar_url,
+          firstName: session.user.user_metadata.firstName,
+          lastName: session.user.user_metadata.lastName
         });
         setIsAuthenticated(true);
       } else {
@@ -73,17 +80,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session) {
           const emailConfirmed = session.user.email_confirmed_at || session.user.confirmed_at;
           if (!emailConfirmed) {
+            console.log("Email not confirmed during session check:", session.user.email);
             setUser(null);
             setIsAuthenticated(false);
-            toast.error("Please confirm your email before logging in.");
-            supabase.auth.signOut();
             return;
           }
+          
+          console.log("Session check: Email confirmed for user:", session.user.email);
           setUser({
             id: session.user.id,
             name: session.user.user_metadata.name || session.user.email?.split('@')[0] || 'User',
             email: session.user.email || '',
             avatar: session.user.user_metadata.avatar_url,
+            firstName: session.user.user_metadata.firstName,
+            lastName: session.user.user_metadata.lastName
           });
           setIsAuthenticated(true);
         }
@@ -125,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: {
         data: metadata,
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${window.location.origin}/login?type=signup`,
       }
     });
     if (error) throw error;

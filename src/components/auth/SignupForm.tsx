@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from '@/contexts/AuthContext';
-import { SignupChoices } from './SignupChoices';
 import { toast } from "sonner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { z } from 'zod';
@@ -23,7 +22,7 @@ const formSchema = z.object({
 
 export function SignupForm({ onToggleForm }: SignupFormProps) {
   const [error, setError] = useState<string | null>(null);
-  const [showChoices, setShowChoices] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
 
@@ -49,7 +48,7 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
       });
 
       toast.success("Signup successful! Please check your email to confirm your account before choosing a plan.");
-      setShowChoices(true);
+      setIsSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
       toast.error(err instanceof Error ? err.message : 'Failed to sign up');
@@ -58,16 +57,27 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
     }
   };
 
-  if (showChoices) {
+  if (isSubmitted) {
     return (
-      <div>
-        <div className="mb-6 bg-blue-100 text-blue-700 p-4 rounded text-center">
-          <p className="font-semibold">Important: Email Confirmation Required</p>
-          <p>Please check your inbox and confirm your email address before you can use Locale Spots.</p>
-          <p className="mt-2 text-sm">Didn't receive an email? Check your spam folder or try again with a different email address.</p>
+      <div className="text-center space-y-4">
+        <div className="bg-blue-100 text-blue-700 p-6 rounded-md">
+          <h3 className="text-lg font-semibold mb-2">Verify Your Email</h3>
+          <p>We've sent a verification link to your email address.</p>
+          <p className="mt-2">Please check your inbox and click the verification link to complete your signup.</p>
         </div>
         
-        <SignupChoices />
+        <div className="mt-4 text-sm text-gray-600">
+          <p>After verifying your email, you'll be able to choose your plan.</p>
+          <p className="mt-2">Didn't receive the email? Check your spam folder or try again with a different email address.</p>
+        </div>
+        
+        <Button 
+          variant="outline"
+          onClick={onToggleForm}
+          className="mt-4"
+        >
+          Back to Login
+        </Button>
       </div>
     );
   }

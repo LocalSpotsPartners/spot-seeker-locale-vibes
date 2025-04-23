@@ -56,7 +56,7 @@ export const signup = async (
       // Adding metadata for the user
       data: metadata,
       // Adding this explicit option to store the session
-      emailRedirectTo: `${window.location.origin}/login`,
+      emailRedirectTo: `${window.location.origin}/login?type=signup`,
     }
   });
 
@@ -68,12 +68,14 @@ export const signup = async (
     throw new Error("No user data returned");
   }
 
-  // Fix: Create a properly typed user object with explicit null for avatar
+  // Create a properly typed user object with explicit null for avatar
   const user: User = {
     id: data.user.id,
     name: metadata?.name || data.user.email?.split('@')[0] || 'User',
     email: data.user.email || '',
-    avatar: null, // Explicitly setting avatar to null to avoid type instantiation issues
+    avatar: null, // Explicitly setting avatar to null to fix type issue
+    firstName: metadata?.firstName,
+    lastName: metadata?.lastName
   };
 
   // Log the successful signup for debugging
@@ -136,6 +138,8 @@ export const getCurrentUser = async (): Promise<User | null> => {
     name: user.user_metadata.name || user.email?.split('@')[0] || 'User',
     email: user.email || '',
     avatar: user.user_metadata.avatar_url || null,
+    firstName: user.user_metadata.firstName || null,
+    lastName: user.user_metadata.lastName || null
   };
 };
 

@@ -17,11 +17,12 @@ export default function AuthPage() {
   useEffect(() => {
     // This parameter will be present if this page is loaded as a result of clicking a verification link
     const type = searchParams.get('type');
+    console.log("Auth page loaded with type:", type);
+    
     if (type === 'signup' || type === 'recovery' || type === 'invite') {
       setShowVerification(true);
-      // Try to auto-verify if possible
-      // Supabase will handle this automatically if the other required params are present
-      toast.success("Verifying your email...");
+      // Show toast message for verification
+      toast.success("Thank you for verifying your email!");
     }
   }, [searchParams]);
   
@@ -51,15 +52,15 @@ export default function AuthPage() {
     handleOAuthCallback();
   }, [navigate]);
   
-  // Redirect to home if already authenticated
+  // Redirect to home if already authenticated (unless showing verification)
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      console.log("User is authenticated, redirecting to home");
+    if (!isLoading && isAuthenticated && !showVerification) {
+      console.log("User is authenticated and not in verification flow, redirecting to home");
       navigate("/", { replace: true });
     } else {
-      console.log("Auth status:", { isAuthenticated, isLoading });
+      console.log("Auth status:", { isAuthenticated, isLoading, showVerification });
     }
-  }, [isAuthenticated, navigate, isLoading]);
+  }, [isAuthenticated, navigate, isLoading, showVerification]);
   
   if (isLoading) {
     return (
