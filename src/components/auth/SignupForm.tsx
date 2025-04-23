@@ -24,7 +24,7 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
     setIsLoading(true);
     try {
       await signup(email, password);
-      toast.success("Signup successful! Please check your email to confirm your account before you can log in.");
+      toast.success("Signup successful! Please check your email to confirm your account before choosing a plan.");
       setShowChoices(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign up');
@@ -34,14 +34,13 @@ export function SignupForm({ onToggleForm }: SignupFormProps) {
   };
 
   if (showChoices) {
-    // Add notice about email confirmation
     return (
       <div>
         <SignupChoices />
         <div className="mt-6 bg-blue-100 text-blue-700 p-4 rounded text-center">
-          Please check your email to confirm your account before using Locale Spots.
-          <br />
-          After confirming, come back to login!
+          <p className="font-semibold">Important: Email Confirmation Required</p>
+          <p>Please check your inbox and confirm your email address before you can use Locale Spots.</p>
+          <p className="mt-2 text-sm">Didn't receive an email? Check your spam folder or try again with a different email address.</p>
         </div>
       </div>
     );

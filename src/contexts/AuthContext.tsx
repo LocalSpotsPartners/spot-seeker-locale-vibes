@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { User } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,8 +45,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
           setIsAuthenticated(false);
           setIsLoading(false);
-          toast.error("Please confirm your email before logging in.");
-          supabase.auth.signOut();
+          if (event !== 'SIGNED_UP') {
+            // Only show error if not right after signup
+            toast.error("Please confirm your email before logging in.");
+            supabase.auth.signOut();
+          }
           return;
         }
         setUser({
@@ -97,14 +101,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
+    
+    if (data.user) {
+      const emailConfirmed = data.user.email_confirmed_at || data.user.confirmed_at;
+      if (!emailConfirmed) {
+        toast.error("Please confirm your email before logging in.");
+        await supabase.auth.signOut();
+        throw new Error("Email not confirmed. Please check your inbox.");
+      }
+    }
   };
 
   const signup = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({ 
       email, 
-      password 
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/login`,
+      }
     });
     if (error) throw error;
   };
